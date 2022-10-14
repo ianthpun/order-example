@@ -13,3 +13,7 @@ type PaymentService interface {
 		types []domain.PaymentInstrumentType,
 	) ([]domain.PaymentInstrument, error)
 }
+
+type AssetService interface {
+	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
+}

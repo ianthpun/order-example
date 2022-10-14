@@ -11,7 +11,9 @@ type paymentInstrument struct {
 type PaymentInstrumentType string
 
 const (
-	PaymentInstrumentTypeDapperCredit PaymentInstrumentType = "DAPPER_CREDIT"
+	PaymentInstrumentTypeDapperCredit   PaymentInstrumentType = "DAPPER_CREDIT"
+	PaymentInstrumentTypeCreditCard     PaymentInstrumentType = "CREDIT_CARD"
+	PaymentInstrumentTypeCoinbaseCrypto PaymentInstrumentType = "COINBASE_CRYPTO"
 )
 
 func NewPaymentInstrument(paymentType PaymentInstrumentType) paymentInstrument {
