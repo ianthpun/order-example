@@ -29,6 +29,9 @@ type order struct {
 	expiresAt      time.Time
 }
 
+// this validates an order is always going to implement the Order interface
+var _ Order = (*order)(nil)
+
 var orderExpiry = 10 * time.Minute
 
 func NewOrder(

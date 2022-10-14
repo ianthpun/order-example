@@ -1,21 +1,59 @@
 package app
 
 import (
+	"context"
+	temporalsdk "go.temporal.io/sdk/client"
 	"order-sample/cmd/orders-api/internal/adapters/repository/spanner"
 	"order-sample/cmd/orders-api/internal/adapters/services/grpc"
-	"order-sample/cmd/orders-api/internal/repository"
+	"order-sample/cmd/orders-api/internal/adapters/services/temporal"
 )
 
-type application struct {
-	paymentService  PaymentService
-	AssetService    AssetService
-	orderRepository repository.OrderRepository
+type Application struct {
+	CreateOrder  CreateOrderHandler
+	ConfirmOrder ConfirmOrderHandler
+	CancelOrder  CancelOrderHandler
 }
 
-func New() application {
-	return application{
-		paymentService:  grpc.NewPaymentService(),
-		AssetService:    grpc.NewAssetService(),
-		orderRepository: spanner.NewOrderRepository(),
+type CommandHandler[C any] interface {
+	Handle(ctx context.Context, cmd C) error
+}
+
+type QueryHandler[Q any, R any] interface {
+	Handle(ctx context.Context, q Q) (R, error)
+}
+
+func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
+	paymentService := grpc.NewPaymentService()
+	assetService := grpc.NewAssetService()
+	orderRepository := spanner.NewOrderRepository()
+
+	app := Application{
+		CreateOrder: NewCreateOrderHandler(
+			paymentService,
+			assetService,
+			orderRepository,
+		),
+		ConfirmOrder: NewConfirmOrderHandler(
+			paymentService,
+			assetService,
+			orderRepository,
+			temporal.NewWorkflowService(
+				temporalClient,
+				temporal.ProcessOrderConfig{
+					Activities: NewTemporalProcessOrderActivity(
+						paymentService,
+						assetService,
+						orderRepository,
+					),
+					WorkflowFunc: TemporalProcessOrderWorkflow,
+				}),
+		),
+		CancelOrder: NewCancelOrderHandler(
+			paymentService,
+			assetService,
+			orderRepository,
+		),
 	}
+
+	return app
 }

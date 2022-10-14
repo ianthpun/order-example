@@ -17,3 +17,7 @@ type PaymentService interface {
 type AssetService interface {
 	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
 }
+
+type WorkflowService interface {
+	RunProcessOrder() error
+}
