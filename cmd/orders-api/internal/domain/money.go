@@ -13,6 +13,12 @@ const (
 	CurrencyTypeFLOW CurrencyType = "FLOW"
 )
 
+func (c CurrencyType) String() string {
+	return string(c)
+}
+
+var _ Money = (*money)(nil)
+
 type money struct {
 	amount       string
 	currencyType CurrencyType

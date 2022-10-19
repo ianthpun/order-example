@@ -6,10 +6,18 @@ import (
 )
 
 type Order interface {
-	GetSupportedPaymentMethods() []PaymentInstrumentType
-	SetPaymentOptions([]PaymentInstrument) error
+	GetID() string
+	GetPaymentOptions() []PaymentOption
+	GetSelectedPaymentOption() []PaymentOption
+	SelectPaymentOption(option PaymentOption) bool
+	GetUserID() string
 	IsExpired() bool
 	GetOrderState() OrderState
+	GetAsset() Asset
+	GetCreatedAt() time.Time
+	GetExpiresAt() time.Time
+	GetPrice() Money
+	GetStateChanges() []Message
 }
 
 type OrderState string
@@ -19,14 +27,21 @@ const (
 	OrderStateExpired OrderState = "EXPIRED"
 )
 
+func (o OrderState) String() string {
+	return string(o)
+}
+
 type order struct {
 	id             string
 	asset          Asset
 	state          OrderState
+	selectedOption PaymentOption
 	userID         string
-	amount         Money
+	merchantID     string
+	price          Money
 	paymentOptions []PaymentOption
 	expiresAt      time.Time
+	stateChanges   []Message
 }
 
 // this validates an order is always going to implement the Order interface
@@ -38,7 +53,7 @@ func NewOrder(
 	ID string,
 	userID string,
 	asset Asset,
-	amount Money,
+	price Money,
 ) (*order, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userID cannot be nil")
@@ -48,63 +63,93 @@ func NewOrder(
 		return nil, fmt.Errorf("asset cannot be nil")
 	}
 
-	if amount.IsZero() {
-		return nil, fmt.Errorf("amount cannot be zero")
+	if price.IsZero() {
+		return nil, fmt.Errorf("price cannot be zero")
 	}
 
 	return &order{
-		id:        ID,
-		userID:    userID,
-		asset:     asset,
-		amount:    amount,
-		state:     OrderStateCreated,
-		expiresAt: time.Now().Add(orderExpiry),
+		id:             ID,
+		userID:         userID,
+		asset:          asset,
+		price:          price,
+		state:          OrderStateCreated,
+		expiresAt:      time.Now().Add(orderExpiry),
+		paymentOptions: paymentOptions(ID, price, asset),
 	}, nil
 }
 
-func (o *order) GetSupportedPaymentMethods() []PaymentInstrumentType {
-	switch o.asset.GetAssetType() {
+func paymentOptions(orderID string, price Money, asset Asset) []PaymentOption {
+	switch asset.GetAssetType() {
 	case AssetTypeDapperCredit:
-		return []PaymentInstrumentType{
-			PaymentInstrumentTypeCreditCard,
-			PaymentInstrumentTypeCoinbaseCrypto,
+		return []PaymentOption{
+			NewPaymentOption(orderID, PaymentMethodTypeCreditCard, price, NewNoFee()),
+			NewPaymentOption(orderID, PaymentMethodTypeCoinbaseCrypto, price, NewNoFee()),
 		}
 
 	case AssetTypeNFT:
-		return []PaymentInstrumentType{
-			PaymentInstrumentTypeCreditCard,
-			PaymentInstrumentTypeDapperCredit,
+		return []PaymentOption{
+			NewPaymentOption(orderID, PaymentMethodTypeCreditCard, price, NewNoFee()),
+			NewPaymentOption(orderID, PaymentMethodTypeDapperCredit, price, NewNoFee()),
 		}
 
 	default:
-		return []PaymentInstrumentType{}
+		return []PaymentOption{}
 	}
 }
 
-func (o *order) SetPaymentOptions(options []PaymentInstrument) error {
-	for _, option := range options {
-		amount, fee, err := o.getPaymentOptionCharge(option.GetPaymentInstrumentType())
-		if err != nil {
-			return err
-		}
-		po, err := NewPaymentOption(option.GetPaymentInstrumentType(), amount, fee)
-		if err != nil {
-			return err
-		}
+// UnmarshalOrderFromDatabase will return an order. Use this function strictly for unmarshalling from the database,
+// as it may set the order in an incorrect state.
+func UnmarshalOrderFromDatabase(
+	ID string,
+	userID string,
+	assetID string,
+	assetType string,
+	state string,
+	amount string,
+	currencyType string,
+) (*order, error) {
+	var asset Asset
+	var err error
 
-		o.paymentOptions = append(o.paymentOptions, po)
+	switch assetType {
+	case AssetTypeDapperCredit.String():
+		asset, err = NewDapperCreditAsset(NewMoney(amount, CurrencyType(currencyType)))
+		if err != nil {
+			return nil, err
+		}
+	case AssetTypeNFT.String():
+		asset, err = NewNFTAsset(assetID, assetType)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	return nil
+	o, err := NewOrder(
+		ID,
+		userID,
+		asset,
+		NewMoney(amount, CurrencyType(currencyType)),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	o.state = OrderState(state)
+
+	return o, nil
 }
 
-func (o *order) getPaymentOptionCharge(paymentType PaymentInstrumentType) (amount Money, fees Money, err error) {
+func (o *order) GetPaymentOptions() []PaymentOption {
+	return o.paymentOptions
+}
+
+func (o *order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Money, fees Money, err error) {
 	switch paymentType {
-	case PaymentInstrumentTypeCoinbaseCrypto, PaymentInstrumentTypeDapperCredit:
-		amount = NewMoney(o.amount.GetAmount(), CurrencyTypeUSD)
+	case PaymentMethodTypeCoinbaseCrypto, PaymentMethodTypeDapperCredit:
+		amount = NewMoney(o.price.GetAmount(), CurrencyTypeUSD)
 		fees = NewMoney("0", CurrencyTypeUSD)
-	case PaymentInstrumentTypeCreditCard:
-		amount = NewMoney(o.amount.GetAmount(), CurrencyTypeUSD)
+	case PaymentMethodTypeCreditCard:
+		amount = NewMoney(o.price.GetAmount(), CurrencyTypeUSD)
 		fees = NewMoney("5.00", CurrencyTypeUSD)
 	default:
 		err = fmt.Errorf("unsupported payment type: %s", paymentType)
@@ -124,4 +169,49 @@ func (o *order) IsExpired() bool {
 
 func (o *order) GetOrderState() OrderState {
 	return o.state
+}
+
+func (o *order) GetID() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetUserID() string {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetAsset() Asset {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetCreatedAt() time.Time {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetExpiresAt() time.Time {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetPrice() Money {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetSelectedPaymentOption() []PaymentOption {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) SelectPaymentOption(option PaymentOption) bool {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *order) GetStateChanges() []Message {
+	//TODO implement me
+	panic("implement me")
 }

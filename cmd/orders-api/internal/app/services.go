@@ -7,17 +7,19 @@ import (
 
 // PaymentService are all the capabilities of the payment service
 type PaymentService interface {
-	GetPaymentInstruments(
+	GetPaymentMethods(
 		ctx context.Context,
 		userID string,
-		types []domain.PaymentInstrumentType,
-	) ([]domain.PaymentInstrument, error)
+		types []domain.PaymentMethodType,
+	) ([]domain.PaymentMethod, error)
 }
 
+// AssetService are all the capabilities of the asset service
 type AssetService interface {
 	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
 }
 
+// WorkflowService are all the capabilities of the workflow service
 type WorkflowService interface {
-	RunProcessOrder() error
+	RunProcessOrder(ctx context.Context) error
 }

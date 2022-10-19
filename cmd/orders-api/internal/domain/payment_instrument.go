@@ -1,27 +1,37 @@
 package domain
 
-type PaymentInstrument interface {
-	GetPaymentInstrumentType() PaymentInstrumentType
+type PaymentMethod interface {
+	GetID() string
+	GetPaymentMethodType() PaymentMethodType
 }
 
 type paymentInstrument struct {
-	paymentInstrumentType PaymentInstrumentType
+	id                    string
+	paymentInstrumentType PaymentMethodType
 }
 
-type PaymentInstrumentType string
+var _ PaymentMethod = (*paymentInstrument)(nil)
+
+type PaymentMethodType string
 
 const (
-	PaymentInstrumentTypeDapperCredit   PaymentInstrumentType = "DAPPER_CREDIT"
-	PaymentInstrumentTypeCreditCard     PaymentInstrumentType = "CREDIT_CARD"
-	PaymentInstrumentTypeCoinbaseCrypto PaymentInstrumentType = "COINBASE_CRYPTO"
+	PaymentMethodTypeDapperCredit   PaymentMethodType = "DAPPER_CREDIT"
+	PaymentMethodTypeCreditCard     PaymentMethodType = "CREDIT_CARD"
+	PaymentMethodTypeCoinbaseCrypto PaymentMethodType = "COINBASE_CRYPTO"
 )
 
-func NewPaymentInstrument(paymentType PaymentInstrumentType) paymentInstrument {
+func NewPaymentInstrument(id string, paymentType PaymentMethodType) paymentInstrument {
 	return paymentInstrument{
+		id:                    id,
 		paymentInstrumentType: paymentType,
 	}
 }
 
-func (p *paymentInstrument) GetPaymentInstrumentType() PaymentInstrumentType {
+func (p *paymentInstrument) GetPaymentMethodType() PaymentMethodType {
 	return p.paymentInstrumentType
+}
+
+func (p *paymentInstrument) GetID() string {
+	//TODO implement me
+	panic("implement me")
 }

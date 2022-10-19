@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/repository"
+	"order-sample/cmd/orders-api/internal/domain"
 )
 
 type CancelOrderHandler CommandHandler[string]
@@ -10,13 +10,13 @@ type CancelOrderHandler CommandHandler[string]
 type cancelOrderUseCase struct {
 	paymentService  PaymentService
 	assetService    AssetService
-	orderRepository repository.OrderRepository
+	orderRepository domain.OrderRepository
 }
 
 func NewCancelOrderHandler(
 	paymentService PaymentService,
 	assetService AssetService,
-	orderRepository repository.OrderRepository,
+	orderRepository domain.OrderRepository,
 ) *cancelOrderUseCase {
 	return &cancelOrderUseCase{
 		paymentService:  paymentService,

@@ -1,14 +1,18 @@
 package temporal
 
 import (
+	"context"
 	"fmt"
 	temporalsdk "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
+	"order-sample/cmd/orders-api/internal/app"
 )
 
 type workflowService struct {
 	client temporalsdk.Client
 }
+
+var _ app.WorkflowService = (*workflowService)(nil)
 
 type ProcessOrderConfig struct {
 	Activities   interface{}
@@ -34,6 +38,6 @@ func NewWorkflowService(
 	return &workflowService{client: client}
 }
 
-func (w workflowService) RunProcessOrder() error {
+func (w workflowService) RunProcessOrder(ctx context.Context) error {
 	panic("implement me")
 }

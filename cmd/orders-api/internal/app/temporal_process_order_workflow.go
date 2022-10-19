@@ -2,31 +2,36 @@ package app
 
 import (
 	"go.temporal.io/sdk/workflow"
-	"order-sample/cmd/orders-api/internal/repository"
+	"order-sample/cmd/orders-api/internal/domain"
 )
 
+// TemporalProcessOrderActivity is an activity that is used by our Temporal Workflow. Do not use this struct for other
+// reasons.
 type TemporalProcessOrderActivity struct {
-	paymentService  PaymentService
-	assetService    AssetService
-	orderRepository repository.OrderRepository
+	PaymentService  PaymentService
+	AssetService    AssetService
+	OrderRepository domain.OrderRepository
 }
 
 // NewTemporalProcessOrderActivity returns a temporal Activity used for Temporal workflows. Do not use this function for
-// other means.
+// other reasons.
 func NewTemporalProcessOrderActivity(
 	paymentService PaymentService,
 	assetService AssetService,
-	orderRepository repository.OrderRepository,
+	orderRepository domain.OrderRepository,
 ) *TemporalProcessOrderActivity {
 	return &TemporalProcessOrderActivity{
-		paymentService:  paymentService,
-		assetService:    assetService,
-		orderRepository: orderRepository,
+		PaymentService:  paymentService,
+		AssetService:    assetService,
+		OrderRepository: orderRepository,
 	}
 }
 
+type ProcessOrderRequest struct {
+}
+
 // TemporalProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
-// other means.
-func TemporalProcessOrderWorkflow(ctx workflow.Context) error {
+// other reasons.
+func TemporalProcessOrderWorkflow(ctx workflow.Context, _ ProcessOrderRequest) error {
 	return nil
 }

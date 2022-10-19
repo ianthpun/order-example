@@ -14,6 +14,8 @@ type Application struct {
 	CancelOrder  CancelOrderHandler
 }
 
+// CommandHandler
+//These allow for all usecases under application to be private structs and without the need of multiple interfaces
 type CommandHandler[C any] interface {
 	Handle(ctx context.Context, cmd C) error
 }
@@ -27,7 +29,7 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 	assetService := grpc.NewAssetService()
 	orderRepository := spanner.NewOrderRepository()
 
-	app := Application{
+	return Application{
 		CreateOrder: NewCreateOrderHandler(
 			paymentService,
 			assetService,
@@ -54,6 +56,4 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 			orderRepository,
 		),
 	}
-
-	return app
 }
