@@ -9,13 +9,18 @@ import (
 )
 
 type Application struct {
+	Order OrderHandler
+}
+
+// OrderHandler provides all OrderHandler capabilities
+type OrderHandler struct {
 	CreateOrder  CreateOrderHandler
 	ConfirmOrder ConfirmOrderHandler
 	CancelOrder  CancelOrderHandler
 }
 
 // CommandHandler
-//These allow for all usecases under application to be private structs and without the need of multiple interfaces
+// These allow for all usecases under application to be private structs and without the need of multiple interfaces
 type CommandHandler[C any] interface {
 	Handle(ctx context.Context, cmd C) error
 }
@@ -30,30 +35,32 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 	orderRepository := spanner.NewOrderRepository()
 
 	return Application{
-		CreateOrder: NewCreateOrderHandler(
-			paymentService,
-			assetService,
-			orderRepository,
-		),
-		ConfirmOrder: NewConfirmOrderHandler(
-			paymentService,
-			assetService,
-			orderRepository,
-			temporal.NewWorkflowService(
-				temporalClient,
-				temporal.ProcessOrderConfig{
-					Activities: NewTemporalProcessOrderActivity(
-						paymentService,
-						assetService,
-						orderRepository,
-					),
-					WorkflowFunc: TemporalProcessOrderWorkflow,
-				}),
-		),
-		CancelOrder: NewCancelOrderHandler(
-			paymentService,
-			assetService,
-			orderRepository,
-		),
+		Order: OrderHandler{
+			CreateOrder: NewCreateOrderHandler(
+				paymentService,
+				assetService,
+				orderRepository,
+			),
+			ConfirmOrder: NewConfirmOrderHandler(
+				paymentService,
+				assetService,
+				orderRepository,
+				temporal.NewWorkflowService(
+					temporalClient,
+					temporal.ProcessOrderConfig{
+						Activities: NewTemporalProcessOrderActivity(
+							paymentService,
+							assetService,
+							orderRepository,
+						),
+						WorkflowFunc: TemporalProcessOrderWorkflow,
+					}),
+			),
+			CancelOrder: NewCancelOrderHandler(
+				paymentService,
+				assetService,
+				orderRepository,
+			),
+		},
 	}
 }

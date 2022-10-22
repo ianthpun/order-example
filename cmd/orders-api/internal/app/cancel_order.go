@@ -10,6 +10,7 @@ type CancelOrderHandler CommandHandler[string]
 type cancelOrderUseCase struct {
 	paymentService  PaymentService
 	assetService    AssetService
+	orderWorkflow   OrderWorkflow
 	orderRepository domain.OrderRepository
 }
 
@@ -26,5 +27,9 @@ func NewCancelOrderHandler(
 }
 
 func (c *cancelOrderUseCase) Handle(ctx context.Context, orderID string) error {
+	if err := c.orderWorkflow.ConfirmOrder(ctx, orderID); err != nil {
+		return err
+	}
+
 	return nil
 }

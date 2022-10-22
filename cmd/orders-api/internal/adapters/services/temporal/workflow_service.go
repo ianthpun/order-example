@@ -6,13 +6,14 @@ import (
 	temporalsdk "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 	"order-sample/cmd/orders-api/internal/app"
+	"order-sample/cmd/orders-api/internal/domain"
 )
 
 type workflowService struct {
 	client temporalsdk.Client
 }
 
-var _ app.WorkflowService = (*workflowService)(nil)
+var _ app.OrderWorkflow = (*workflowService)(nil)
 
 type ProcessOrderConfig struct {
 	Activities   interface{}
@@ -38,6 +39,17 @@ func NewWorkflowService(
 	return &workflowService{client: client}
 }
 
-func (w workflowService) RunProcessOrder(ctx context.Context) error {
+func (w workflowService) StartOrder(ctx context.Context, order domain.Order) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w workflowService) CancelOrder(ctx context.Context, orderId string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w workflowService) ConfirmOrder(ctx context.Context, orderID string) error {
+	//TODO implement me
 	panic("implement me")
 }

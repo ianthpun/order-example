@@ -19,7 +19,9 @@ type AssetService interface {
 	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
 }
 
-// WorkflowService are all the capabilities of the workflow service
-type WorkflowService interface {
-	RunProcessOrder(ctx context.Context) error
+// OrderWorkflow are all the capabilities of the order workflow
+type OrderWorkflow interface {
+	StartOrder(ctx context.Context, order domain.Order) error
+	CancelOrder(ctx context.Context, orderID string) error
+	ConfirmOrder(ctx context.Context, orderID string) error
 }

@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"order-sample/cmd/orders-api/internal/domain"
 )
@@ -13,6 +12,7 @@ type createOrderUseCase struct {
 	paymentService  PaymentService
 	assetService    AssetService
 	orderRepository domain.OrderRepository
+	workflowService OrderWorkflow
 }
 
 func NewCreateOrderHandler(
@@ -28,15 +28,23 @@ func NewCreateOrderHandler(
 }
 
 type CreateOrderRequest struct {
-	IdempotencyKey string
-	UserID         string
-	Asset          domain.Asset
-	Price          domain.Money
+	idempotencyKey string
+	userID         string
+	asset          domain.Asset
+	price          domain.Money
+}
+
+func NewCreateOrderRequest(
+	idempotencyKey string,
+) CreateOrderRequest {
+	return CreateOrderRequest{
+		idempotencyKey: idempotencyKey,
+	}
 }
 
 // Handle attempts to create a new order
 func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest) (domain.Order, error) {
-	assetAvailable, err := c.assetService.IsAvailable(ctx, req.Asset)
+	assetAvailable, err := c.assetService.IsAvailable(ctx, req.asset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if asset was available: %s", err)
 	}
@@ -45,16 +53,12 @@ func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest)
 		return nil, fmt.Errorf("asset is not available for order")
 	}
 
-	order, err := domain.NewOrder(req.IdempotencyKey, req.UserID, req.Asset, req.Price)
+	order, err := domain.NewOrder(req.idempotencyKey, req.userID, req.asset, req.price)
 	if err != nil {
 		return nil, fmt.Errorf("error creating order: %w", err)
 	}
 
-	if err := c.orderRepository.InsertNewOrder(ctx, order); err != nil {
-		if errors.Is(err, domain.ErrOrderAlreadyExists) {
-			return nil, fmt.Errorf("order already exists")
-		}
-
+	if err := c.workflowService.StartOrder(ctx, order); err != nil {
 		return nil, err
 	}
 

@@ -11,14 +11,14 @@ type confirmOrderUseCase struct {
 	paymentService  PaymentService
 	assetService    AssetService
 	orderRepository domain.OrderRepository
-	workflowService WorkflowService
+	workflowService OrderWorkflow
 }
 
 func NewConfirmOrderHandler(
 	paymentService PaymentService,
 	assetService AssetService,
 	orderRepository domain.OrderRepository,
-	workflowService WorkflowService,
+	workflowService OrderWorkflow,
 ) *confirmOrderUseCase {
 	c := confirmOrderUseCase{
 		paymentService:  paymentService,
@@ -33,7 +33,7 @@ func NewConfirmOrderHandler(
 func (c *confirmOrderUseCase) Handle(ctx context.Context, id string) error {
 	// TODO: run some validations first maybe
 
-	if err := c.workflowService.RunProcessOrder(ctx); err != nil {
+	if err := c.workflowService.ConfirmOrder(ctx, id); err != nil {
 		return err
 	}
 
