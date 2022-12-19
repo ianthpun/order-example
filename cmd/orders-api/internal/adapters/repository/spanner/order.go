@@ -68,7 +68,7 @@ func (r *repo) UpdateOrder(
 			o.CurrencyCode,
 		)
 
-		order, err := updateFn(ctx, domainOrder)
+		order, err := updateFn(ctx, &domainOrder)
 		if err != nil {
 			return err
 		}

@@ -5,7 +5,7 @@ import (
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
-type ConfirmOrderHandler CommandHandler[string]
+type ConfirmOrderHandler CommandHandler[ConfirmOrderRequest]
 
 type confirmOrderUseCase struct {
 	paymentService  PaymentService

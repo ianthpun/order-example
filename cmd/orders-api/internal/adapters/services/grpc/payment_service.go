@@ -2,7 +2,6 @@ package grpc
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
@@ -12,8 +11,6 @@ func (ps *paymentService) ChargePayment(ctx context.Context, orderID string, use
 	//TODO implement me
 	panic("implement me")
 }
-
-var _ app.PaymentService = (*paymentService)(nil)
 
 func NewPaymentService() *paymentService {
 	return &paymentService{}

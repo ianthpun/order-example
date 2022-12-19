@@ -2,13 +2,10 @@ package grpc
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
 type assetService struct{}
-
-var _ app.AssetService = (*assetService)(nil)
 
 func NewAssetService() *assetService {
 	return &assetService{}

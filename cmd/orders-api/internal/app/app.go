@@ -26,7 +26,7 @@ type CommandHandler[C any] interface {
 }
 
 type QueryHandler[Q any, R any] interface {
-	Handle(ctx context.Context, q Q) (R, error)
+	Handle(ctx context.Context, q Q) (*R, error)
 }
 
 func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
@@ -53,11 +53,11 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 				orderRepository,
 				workflowService,
 			),
-			//ConfirmOrder: NewConfirmOrderHandler(
-			//	paymentService,
-			//	assetService,
-			//	orderRepository,
-			//),
+			ConfirmOrder: NewConfirmOrderHandler(
+				paymentService,
+				assetService,
+				orderRepository,
+			),
 			CancelOrder: NewCancelOrderHandler(
 				paymentService,
 				assetService,
