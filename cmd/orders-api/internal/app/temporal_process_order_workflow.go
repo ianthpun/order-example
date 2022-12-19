@@ -49,58 +49,69 @@ func (a *TemporalProcessOrderActivity) ChargePayment(
 }
 
 func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID string) (domain.Order, error) {
-	return a.OrderRepository.UpdateOrder(
+	var o domain.Order
+	err := a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
-		func(ctx context.Context, order domain.Order) error {
-			o := order
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			o = *order
 			if err := o.Cancel(); err != nil {
-				return err
+				return nil, err
 			}
 
-			return nil
-
+			return &o, nil
 		})
+	if err != nil {
+		return domain.Order{}, err
+	}
+
+	return o, nil
 }
 
 func (a *TemporalProcessOrderActivity) ConfirmOrder(
 	ctx context.Context,
 	orderID string,
 	option domain.PaymentOption,
-) (*domain.Order, error) {
-	var order *domain.Order
+) (domain.Order, error) {
+	var o domain.Order
 	if err := a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
-		func(ctx context.Context, order *domain.Order) error {
-			o := order
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			o = *order
 			if err := o.Confirm(option); err != nil {
-				return err
+				return nil, err
 			}
 
-			return nil
+			return &o, nil
 		}); err != nil {
-		return nil, err
+		return domain.Order{}, err
 	}
 
-	return order, nil
+	return o, nil
 }
 
 func (a *TemporalProcessOrderActivity) ExpireOrder(
 	ctx context.Context,
 	orderID string,
 ) (domain.Order, error) {
-	return a.OrderRepository.UpdateOrder(
+	var o domain.Order
+	err := a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
-		func(ctx context.Context, order domain.Order) error {
-			o := order
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			o = *order
 			if err := o.Expire(); err != nil {
-				return err
+				return nil, err
 			}
 
-			return nil
+			return &o, nil
 		})
+	if err != nil {
+		return domain.Order{}, err
+	}
+
+	return o, nil
 }
 
 func (a *TemporalProcessOrderActivity) RefundPayment(

@@ -8,6 +8,11 @@ import (
 
 type paymentService struct{}
 
+func (ps *paymentService) ChargePayment(ctx context.Context, orderID string, userID string, paymentOption domain.PaymentOption) (string, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 var _ app.PaymentService = (*paymentService)(nil)
 
 func NewPaymentService() *paymentService {

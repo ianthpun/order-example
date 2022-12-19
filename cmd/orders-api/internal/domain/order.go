@@ -91,7 +91,7 @@ func UnmarshalOrderFromDatabase(
 	state string,
 	amount string,
 	currencyType string,
-) (*Order, error) {
+) (Order, error) {
 	var asset Asset
 	var err error
 
@@ -99,12 +99,12 @@ func UnmarshalOrderFromDatabase(
 	case AssetTypeDapperCredit.String():
 		asset, err = NewDapperCreditAsset(NewMoney(amount, CurrencyType(currencyType)))
 		if err != nil {
-			return nil, err
+			return Order{}, err
 		}
 	case AssetTypeNFT.String():
 		asset, err = NewNFTAsset(assetID, assetType)
 		if err != nil {
-			return nil, err
+			return Order{}, err
 		}
 	}
 
@@ -115,12 +115,12 @@ func UnmarshalOrderFromDatabase(
 		NewMoney(amount, CurrencyType(currencyType)),
 	)
 	if err != nil {
-		return nil, err
+		return Order{}, err
 	}
 
 	o.state = OrderState(state)
 
-	return o, nil
+	return *o, nil
 }
 
 func (o *Order) GetPaymentOptions() []PaymentOption {
@@ -211,6 +211,11 @@ func (o *Order) Cancel() error {
 }
 
 func (o *Order) Confirm(option PaymentOption) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *Order) Expire() error {
 	//TODO implement me
 	panic("implement me")
 }

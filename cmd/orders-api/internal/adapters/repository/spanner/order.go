@@ -33,7 +33,7 @@ func (r *repo) GetOrder(ctx context.Context, orderID string) (domain.Order, erro
 	o := Order{ID: orderID}
 	_, err := r.db.NewSelect().Model(&o).WherePK().Relation("PaymentOptions").Exec(ctx)
 	if err != nil {
-		return nil, err
+		return domain.Order{}, err
 	}
 
 	return domain.UnmarshalOrderFromDatabase(
@@ -49,7 +49,7 @@ func (r *repo) GetOrder(ctx context.Context, orderID string) (domain.Order, erro
 
 func (r *repo) UpdateOrder(
 	ctx context.Context, orderID string,
-	updateFn func(ctx context.Context, order domain.Order) (domain.Order, error),
+	updateFn func(ctx context.Context, order *domain.Order) (*domain.Order, error),
 ) error {
 	return r.db.RunInTx(ctx, nil, func(ctx context.Context, tx bun.Tx) error {
 		o := Order{ID: orderID}
@@ -73,7 +73,7 @@ func (r *repo) UpdateOrder(
 			return err
 		}
 
-		updateOrder := orderToSpannerModel(order)
+		updateOrder := orderToSpannerModel(*order)
 
 		_, err = tx.NewUpdate().Model(&updateOrder).Exec(ctx)
 		if err != nil {

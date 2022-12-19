@@ -45,7 +45,7 @@ func NewCreateOrderRequest(
 }
 
 // Handle attempts to create a new order
-func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest) (domain.Order, error) {
+func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest) (*domain.Order, error) {
 	assetAvailable, err := c.assetService.IsAvailable(ctx, req.asset)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check if asset was available: %s", err)
@@ -60,7 +60,7 @@ func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest)
 		return nil, fmt.Errorf("error creating order: %w", err)
 	}
 
-	if err := c.orderWorkflow.StartOrder(ctx, order); err != nil {
+	if err := c.orderWorkflow.StartOrder(ctx, *order); err != nil {
 		return nil, err
 	}
 
