@@ -12,6 +12,12 @@ type PaymentService interface {
 		userID string,
 		types []domain.PaymentMethodType,
 	) ([]domain.PaymentMethod, error)
+	ChargePayment(
+		ctx context.Context,
+		orderID string,
+		userID string,
+		paymentOption domain.PaymentOption,
+	) (string, error)
 }
 
 // AssetService are all the capabilities of the asset service
@@ -23,5 +29,5 @@ type AssetService interface {
 type OrderWorkflow interface {
 	StartOrder(ctx context.Context, order domain.Order) error
 	CancelOrder(ctx context.Context, orderID string) error
-	ConfirmOrder(ctx context.Context, orderID string) error
+	ConfirmOrder(ctx context.Context, orderID string, paymentOption domain.PaymentOption) error
 }

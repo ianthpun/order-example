@@ -49,7 +49,7 @@ func (w workflowService) CancelOrder(ctx context.Context, orderId string) error 
 	panic("implement me")
 }
 
-func (w workflowService) ConfirmOrder(ctx context.Context, orderID string) error {
+func (w workflowService) ConfirmOrder(ctx context.Context, orderID string, paymentOptionID string) error {
 	//TODO implement me
 	panic("implement me")
 }

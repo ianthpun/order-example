@@ -15,6 +15,6 @@ type OrderRepository interface {
 	UpdateOrder(
 		ctx context.Context,
 		orderID string,
-		updateFn func(ctx context.Context, order Order) (Order, error),
+		updateFn func(ctx context.Context, order *Order) error,
 	) error
 }

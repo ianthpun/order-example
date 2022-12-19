@@ -5,33 +5,20 @@ import (
 	"time"
 )
 
-type Order interface {
-	GetID() string
-	GetPaymentOptions() []PaymentOption
-	GetSelectedPaymentOption() []PaymentOption
-	SelectPaymentOption(option PaymentOption) bool
-	GetUserID() string
-	IsExpired() bool
-	GetOrderState() OrderState
-	GetAsset() Asset
-	GetCreatedAt() time.Time
-	GetExpiresAt() time.Time
-	GetPrice() Money
-	GetStateChanges() []Message
-}
-
 type OrderState string
 
 const (
-	OrderStateCreated OrderState = "CREATED"
-	OrderStateExpired OrderState = "EXPIRED"
+	OrderStateCreated   OrderState = "CREATED"
+	OrderStateExpired   OrderState = "EXPIRED"
+	OrderStateCancelled OrderState = "CANCELLED"
+	OrderStateConfirmed OrderState = "CONFIRMED"
 )
 
 func (o OrderState) String() string {
 	return string(o)
 }
 
-type order struct {
+type Order struct {
 	id             string
 	asset          Asset
 	state          OrderState
@@ -44,9 +31,6 @@ type order struct {
 	stateChanges   []Message
 }
 
-// this validates an order is always going to implement the Order interface
-var _ Order = (*order)(nil)
-
 var orderExpiry = 10 * time.Minute
 
 func NewOrder(
@@ -54,7 +38,7 @@ func NewOrder(
 	userID string,
 	asset Asset,
 	price Money,
-) (*order, error) {
+) (*Order, error) {
 	if userID == "" {
 		return nil, fmt.Errorf("userID cannot be nil")
 	}
@@ -67,7 +51,7 @@ func NewOrder(
 		return nil, fmt.Errorf("price cannot be zero")
 	}
 
-	return &order{
+	return &Order{
 		id:             ID,
 		userID:         userID,
 		asset:          asset,
@@ -107,7 +91,7 @@ func UnmarshalOrderFromDatabase(
 	state string,
 	amount string,
 	currencyType string,
-) (*order, error) {
+) (*Order, error) {
 	var asset Asset
 	var err error
 
@@ -139,11 +123,11 @@ func UnmarshalOrderFromDatabase(
 	return o, nil
 }
 
-func (o *order) GetPaymentOptions() []PaymentOption {
+func (o *Order) GetPaymentOptions() []PaymentOption {
 	return o.paymentOptions
 }
 
-func (o *order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Money, fees Money, err error) {
+func (o *Order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Money, fees Money, err error) {
 	switch paymentType {
 	case PaymentMethodTypeCoinbaseCrypto, PaymentMethodTypeDapperCredit:
 		amount = NewMoney(o.price.GetAmount(), CurrencyTypeUSD)
@@ -158,7 +142,7 @@ func (o *order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Mo
 	return
 }
 
-func (o *order) IsExpired() bool {
+func (o *Order) IsExpired() bool {
 	if o.expiresAt.After(time.Now()) {
 		o.state = OrderStateExpired
 		return true
@@ -167,51 +151,66 @@ func (o *order) IsExpired() bool {
 	return false
 }
 
-func (o *order) GetOrderState() OrderState {
+func (o *Order) GetOrderState() OrderState {
 	return o.state
 }
 
-func (o *order) GetID() string {
+func (o *Order) GetID() string {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetUserID() string {
+func (o *Order) GetUserID() string {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetAsset() Asset {
+func (o *Order) GetAsset() Asset {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetCreatedAt() time.Time {
+func (o *Order) GetCreatedAt() time.Time {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetExpiresAt() time.Time {
+func (o *Order) GetExpiresAt() time.Time {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetPrice() Money {
+func (o *Order) GetPrice() Money {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetSelectedPaymentOption() []PaymentOption {
+func (o *Order) GetSelectedPaymentOption() []PaymentOption {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) SelectPaymentOption(option PaymentOption) bool {
+func (o *Order) SelectPaymentOption(option PaymentOption) bool {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (o *order) GetStateChanges() []Message {
+func (o *Order) GetStateChanges() []Message {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (o *Order) Cancel() error {
+	if o.state != OrderStateCreated {
+		return fmt.Errorf("cannot cancel state is it is not in created state: %s", o.state)
+	}
+
+	o.state = OrderStateCancelled
+
+	return nil
+}
+
+func (o *Order) Confirm(option PaymentOption) error {
 	//TODO implement me
 	panic("implement me")
 }

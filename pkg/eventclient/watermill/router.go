@@ -1,12 +1,12 @@
-package eventclient
+package watermill
 
 import (
 	"context"
 	"github.com/ThreeDotsLabs/watermill/message"
-	watermill2 "order-sample/pkg/eventclient/watermill"
+	"order-sample/pkg/eventclient"
 )
 
-var _ Router = (*router)(nil)
+var _ eventclient.Router = (*router)(nil)
 
 type router struct {
 	watermillRouter *message.Router
@@ -29,23 +29,23 @@ func NewRouter() *router {
 func (r *router) Register(
 	handlerName string,
 	subscribeTopic string,
-	subscriber Subscriber,
+	subscriber eventclient.Subscriber,
 	publishTopic string,
-	publisher Publisher,
-	handlerFunc HandlerFunc,
-	middlewares ...MiddlewareFunc,
+	publisher eventclient.Publisher,
+	handlerFunc eventclient.HandlerFunc,
+	middlewares ...eventclient.MiddlewareFunc,
 ) error {
 	handler := r.watermillRouter.AddHandler(
 		handlerName,
 		subscribeTopic,
-		watermill2.NewSubscriberAdapter(subscriber),
+		NewSubscriberAdapter(subscriber),
 		publishTopic,
-		watermill2.NewPublisherAdapter(publisher),
-		watermill2.ToWatermillHandlerFunc(handlerFunc),
+		NewPublisherAdapter(publisher),
+		ToWatermillHandlerFunc(handlerFunc),
 	)
 
 	for _, md := range middlewares {
-		handler.AddMiddleware(watermill2.ToWatermillMiddlewareFunc(md))
+		handler.AddMiddleware(ToWatermillMiddlewareFunc(md))
 	}
 
 	return nil
@@ -54,17 +54,17 @@ func (r *router) Register(
 func (*router) RegisterWithoutPublishing(
 	handlerName string,
 	subscribeTopic string,
-	subscriber Subscriber,
+	subscriber eventclient.Subscriber,
 	publishTopic string,
-	publisher Publisher,
-	handlerFunc HandlerFunc,
-	middlewares ...MiddlewareFunc,
+	publisher eventclient.Publisher,
+	handlerFunc eventclient.HandlerFunc,
+	middlewares ...eventclient.MiddlewareFunc,
 ) error {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (r *router) AddMiddleware(middlewares ...MiddlewareFunc) {
+func (r *router) AddMiddleware(middlewares ...eventclient.MiddlewareFunc) {
 	// TODO: add this here
 }
 

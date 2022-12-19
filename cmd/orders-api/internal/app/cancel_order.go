@@ -27,7 +27,7 @@ func NewCancelOrderHandler(
 }
 
 func (c *cancelOrderUseCase) Handle(ctx context.Context, orderID string) error {
-	if err := c.orderWorkflow.ConfirmOrder(ctx, orderID); err != nil {
+	if err := c.orderWorkflow.CancelOrder(ctx, orderID); err != nil {
 		return err
 	}
 

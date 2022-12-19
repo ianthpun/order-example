@@ -33,6 +33,17 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 	paymentService := grpc.NewPaymentService()
 	assetService := grpc.NewAssetService()
 	orderRepository := spanner.NewOrderRepository()
+	workflowService := temporal.NewWorkflowService(
+		temporalClient,
+		temporal.ProcessOrderConfig{
+			Activities: NewTemporalProcessOrderActivity(
+				paymentService,
+				assetService,
+				orderRepository,
+			),
+			WorkflowFunc: TemporalProcessOrderWorkflow,
+		},
+	)
 
 	return Application{
 		Order: OrderHandler{
@@ -40,22 +51,13 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 				paymentService,
 				assetService,
 				orderRepository,
+				workflowService,
 			),
-			ConfirmOrder: NewConfirmOrderHandler(
-				paymentService,
-				assetService,
-				orderRepository,
-				temporal.NewWorkflowService(
-					temporalClient,
-					temporal.ProcessOrderConfig{
-						Activities: NewTemporalProcessOrderActivity(
-							paymentService,
-							assetService,
-							orderRepository,
-						),
-						WorkflowFunc: TemporalProcessOrderWorkflow,
-					}),
-			),
+			//ConfirmOrder: NewConfirmOrderHandler(
+			//	paymentService,
+			//	assetService,
+			//	orderRepository,
+			//),
 			CancelOrder: NewCancelOrderHandler(
 				paymentService,
 				assetService,

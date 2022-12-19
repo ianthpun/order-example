@@ -12,18 +12,20 @@ type createOrderUseCase struct {
 	paymentService  PaymentService
 	assetService    AssetService
 	orderRepository domain.OrderRepository
-	workflowService OrderWorkflow
+	orderWorkflow   OrderWorkflow
 }
 
 func NewCreateOrderHandler(
 	paymentService PaymentService,
 	assetService AssetService,
 	orderRepository domain.OrderRepository,
+	orderWorkflow OrderWorkflow,
 ) *createOrderUseCase {
 	return &createOrderUseCase{
 		paymentService:  paymentService,
 		assetService:    assetService,
 		orderRepository: orderRepository,
+		orderWorkflow:   orderWorkflow,
 	}
 }
 
@@ -58,7 +60,7 @@ func (c *createOrderUseCase) Handle(ctx context.Context, req CreateOrderRequest)
 		return nil, fmt.Errorf("error creating order: %w", err)
 	}
 
-	if err := c.workflowService.StartOrder(ctx, order); err != nil {
+	if err := c.orderWorkflow.StartOrder(ctx, order); err != nil {
 		return nil, err
 	}
 

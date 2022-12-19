@@ -51,6 +51,7 @@ func NewSubscriber(
 		sub: sub,
 	}, nil
 }
+
 func (s Subscriber) Subscribe(ctx context.Context, topic string) (<-chan *eventclient2.Message, error) {
 	//TODO implement me
 	panic("implement me")

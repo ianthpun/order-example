@@ -6,8 +6,6 @@ import (
 	"order-sample/pkg/eventclient"
 )
 
-var _ pkgwatermill.Subscriber = (*subscriberAdapter)(nil)
-
 type subscriberAdapter struct {
 	subscriber eventclient.Subscriber
 }
