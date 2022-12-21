@@ -2,13 +2,6 @@ package domain
 
 import "fmt"
 
-type Asset interface {
-	GetAssetType() AssetType
-	GetID() string
-	GetName() string
-	IsEmpty() bool
-}
-
 type AssetType string
 
 const (
@@ -20,23 +13,33 @@ func (a AssetType) String() string {
 	return string(a)
 }
 
-type dapperCreditAsset struct {
-	id     string
-	name   string
-	amount Money
+type Asset struct {
+	id        string
+	name      string
+	assetType AssetType
 }
 
-func (d dapperCreditAsset) IsEmpty() bool {
-	return d == dapperCreditAsset{}
+func (a Asset) IsEmpty() bool {
+	return a == Asset{}
+}
+
+func (a Asset) GetAssetType() AssetType {
+	return a.assetType
+}
+
+func (a Asset) GetID() string {
+	return a.id
+}
+
+func (a Asset) GetName() string {
+	return a.name
 }
 
 const (
 	dapperCreditID = "DAPPER_CREDIT"
 )
 
-var _ Asset = (*dapperCreditAsset)(nil)
-
-func NewDapperCreditAsset(amount Money) (*dapperCreditAsset, error) {
+func NewDapperCreditAsset(amount Money) (*Asset, error) {
 	if amount.GetCurrencyType() != CurrencyTypeUSD {
 		return nil, fmt.Errorf("dapper credit can only be purchasable as USD")
 	}
@@ -45,56 +48,17 @@ func NewDapperCreditAsset(amount Money) (*dapperCreditAsset, error) {
 		return nil, fmt.Errorf("price cannot be zero")
 	}
 
-	return &dapperCreditAsset{
-		id:     dapperCreditID,
-		name:   fmt.Sprintf("Dapper Credit: %s", amount.GetAmount()),
-		amount: amount,
+	return &Asset{
+		id:        dapperCreditID,
+		name:      fmt.Sprintf("Dapper Credit: %s", amount.GetAmount()),
+		assetType: AssetTypeDapperCredit,
 	}, nil
 }
 
-func (d *dapperCreditAsset) GetAssetType() AssetType {
-	return AssetTypeDapperCredit
-}
-
-func (d *dapperCreditAsset) GetID() string {
-	return d.id
-}
-
-func (d *dapperCreditAsset) GetName() string {
-	return d.name
-}
-
-type nftAsset struct {
-	id          string
-	name        string
-	ownerUserID string
-}
-
-var _ Asset = (*nftAsset)(nil)
-
-func NewNFTAsset(id string, name string) (*nftAsset, error) {
-	return &nftAsset{
-		id:   id,
-		name: name,
+func NewNFTAsset(id string, name string) (*Asset, error) {
+	return &Asset{
+		id:        id,
+		name:      name,
+		assetType: AssetTypeNFT,
 	}, nil
-}
-
-func (n nftAsset) GetAssetType() AssetType {
-	return AssetTypeNFT
-}
-
-func (n nftAsset) GetID() string {
-	return n.id
-}
-
-func (n nftAsset) GetName() string {
-	return n.name
-}
-
-func (n nftAsset) IsEmpty() bool {
-	return n == nftAsset{}
-}
-
-func (n nftAsset) GetOwnerUserID() string {
-	return n.ownerUserID
 }

@@ -29,5 +29,5 @@ type AssetService interface {
 type OrderWorkflow interface {
 	StartOrder(ctx context.Context, order domain.Order) error
 	CancelOrder(ctx context.Context, orderID string) error
-	ConfirmOrder(ctx context.Context, orderID string, paymentOption domain.PaymentOption) error
+	ConfirmOrder(ctx context.Context, orderID string, paymentOptionID string) error
 }

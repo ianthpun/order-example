@@ -14,6 +14,20 @@ type TemporalProcessOrderActivity struct {
 	app             Application
 }
 
+// NewTemporalProcessOrderActivity returns a temporal Activity used for Temporal workflows. Do not use this function for
+// other reasons.
+func NewTemporalProcessOrderActivity(
+	paymentService PaymentService,
+	assetService AssetService,
+	orderRepository domain.OrderRepository,
+) *TemporalProcessOrderActivity {
+	return &TemporalProcessOrderActivity{
+		PaymentService:  paymentService,
+		AssetService:    assetService,
+		OrderRepository: orderRepository,
+	}
+}
+
 func (a *TemporalProcessOrderActivity) ChargePayment(
 	ctx context.Context,
 	orderID string,
@@ -56,21 +70,21 @@ func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID 
 func (a *TemporalProcessOrderActivity) ConfirmOrder(
 	ctx context.Context,
 	orderID string,
-	option domain.PaymentOption,
-) (domain.Order, error) {
-	var o domain.Order
+	paymentOptionID string,
+) (*domain.Order, error) {
+	var o *domain.Order
 	if err := a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
 		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			o = *order
-			if err := o.Confirm(option); err != nil {
+			o = order
+			if err := o.ConfirmPaymentOption(paymentOptionID); err != nil {
 				return nil, err
 			}
 
-			return &o, nil
+			return o, nil
 		}); err != nil {
-		return domain.Order{}, err
+		return nil, err
 	}
 
 	return o, nil
@@ -106,27 +120,27 @@ func (a *TemporalProcessOrderActivity) RefundPayment(
 	return nil
 }
 
-// NewTemporalProcessOrderActivity returns a temporal Activity used for Temporal workflows. Do not use this function for
-// other reasons.
-func NewTemporalProcessOrderActivity(
-	paymentService PaymentService,
-	assetService AssetService,
-	orderRepository domain.OrderRepository,
-) *TemporalProcessOrderActivity {
-	return &TemporalProcessOrderActivity{
-		PaymentService:  paymentService,
-		AssetService:    assetService,
-		OrderRepository: orderRepository,
-	}
-}
-
 func (a *TemporalProcessOrderActivity) CreateOrder(
 	ctx context.Context,
-	order domain.Order,
+	order *domain.Order,
 ) error {
-	return a.OrderRepository.InsertNewOrder(ctx, order)
+	return a.OrderRepository.InsertNewOrder(ctx, *order)
 }
 
-type ProcessOrderRequest struct {
-	Order domain.Order
+func (a *TemporalProcessOrderActivity) UpdateOrder(
+	ctx context.Context,
+	order domain.Order,
+) (domain.Order, error) {
+	var o domain.Order
+	err := a.OrderRepository.UpdateOrder(
+		ctx,
+		order.GetID(),
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			return order, nil
+		})
+	if err != nil {
+		return domain.Order{}, err
+	}
+
+	return o, nil
 }

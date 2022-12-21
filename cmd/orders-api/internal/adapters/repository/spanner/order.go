@@ -31,7 +31,7 @@ func (r *repo) InsertNewOrder(ctx context.Context, order domain.Order) error {
 
 func (r *repo) GetOrder(ctx context.Context, orderID string) (domain.Order, error) {
 	o := Order{ID: orderID}
-	_, err := r.db.NewSelect().Model(&o).WherePK().Relation("PaymentOptions").Exec(ctx)
+	_, err := r.db.NewSelect().Model(&o).WherePK().Relation("paymentOptions").Exec(ctx)
 	if err != nil {
 		return domain.Order{}, err
 	}

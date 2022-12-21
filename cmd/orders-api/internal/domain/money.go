@@ -1,11 +1,5 @@
 package domain
 
-type Money interface {
-	GetAmount() string
-	GetCurrencyType() CurrencyType
-	IsZero() bool
-}
-
 type CurrencyType string
 
 const (
@@ -17,29 +11,26 @@ func (c CurrencyType) String() string {
 	return string(c)
 }
 
-var _ Money = (*money)(nil)
-
-type money struct {
+type Money struct {
 	amount       string
 	currencyType CurrencyType
 }
 
-func NewMoney(amount string, currencyType CurrencyType) money {
-	return money{
+func NewMoney(amount string, currencyType CurrencyType) Money {
+	return Money{
 		amount:       amount,
 		currencyType: currencyType,
 	}
 }
 
-func (m money) GetAmount() string {
+func (m Money) GetAmount() string {
 	return m.amount
 }
 
-func (m money) GetCurrencyType() CurrencyType {
+func (m Money) GetCurrencyType() CurrencyType {
 	return m.currencyType
 }
 
-func (m money) IsZero() bool {
-	//TODO implement me
-	panic("implement me")
+func (m Money) IsZero() bool {
+	return m.amount == "0" || m.amount == ""
 }

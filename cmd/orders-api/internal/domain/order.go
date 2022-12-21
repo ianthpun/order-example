@@ -27,8 +27,6 @@ type Order struct {
 	merchantID     string
 	price          Money
 	paymentOptions []PaymentOption
-	expiresAt      time.Time
-	stateChanges   []Message
 }
 
 var orderExpiry = 10 * time.Minute
@@ -57,7 +55,6 @@ func NewOrder(
 		asset:          asset,
 		price:          price,
 		state:          OrderStateCreated,
-		expiresAt:      time.Now().Add(orderExpiry),
 		paymentOptions: paymentOptions(ID, price, asset),
 	}, nil
 }
@@ -143,12 +140,7 @@ func (o *Order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Mo
 }
 
 func (o *Order) IsExpired() bool {
-	if o.expiresAt.After(time.Now()) {
-		o.state = OrderStateExpired
-		return true
-	}
-
-	return false
+	return o.GetOrderState() == OrderStateExpired
 }
 
 func (o *Order) GetOrderState() OrderState {
@@ -156,18 +148,15 @@ func (o *Order) GetOrderState() OrderState {
 }
 
 func (o *Order) GetID() string {
-	//TODO implement me
-	panic("implement me")
+	return o.id
 }
 
 func (o *Order) GetUserID() string {
-	//TODO implement me
-	panic("implement me")
+	return o.userID
 }
 
 func (o *Order) GetAsset() Asset {
-	//TODO implement me
-	panic("implement me")
+	return o.asset
 }
 
 func (o *Order) GetCreatedAt() time.Time {
@@ -181,16 +170,10 @@ func (o *Order) GetExpiresAt() time.Time {
 }
 
 func (o *Order) GetPrice() Money {
-	//TODO implement me
-	panic("implement me")
+	return o.price
 }
 
 func (o *Order) GetSelectedPaymentOption() []PaymentOption {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *Order) SelectPaymentOption(option PaymentOption) bool {
 	//TODO implement me
 	panic("implement me")
 }
@@ -210,12 +193,21 @@ func (o *Order) Cancel() error {
 	return nil
 }
 
-func (o *Order) Confirm(option PaymentOption) error {
-	//TODO implement me
-	panic("implement me")
+func (o *Order) ConfirmPaymentOption(paymentOptionID string) error {
+	for _, po := range o.paymentOptions {
+		if paymentOptionID == po.GetID() {
+			o.selectedOption = po
+			o.state = OrderStateConfirmed
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("paymentOptionID %s was not part of order", paymentOptionID)
 }
 
 func (o *Order) Expire() error {
-	//TODO implement me
-	panic("implement me")
+	o.state = OrderStateExpired
+
+	return nil
 }

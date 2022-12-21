@@ -1,16 +1,6 @@
 package domain
 
-type PaymentOption interface {
-	GetID() string
-	GetOrderID() string
-	GetPaymentType() PaymentMethodType
-	GetFee() Fee
-	GetSubtotal() Money
-	GetTotal() Money
-	GetCurrency() CurrencyType
-}
-
-type paymentOption struct {
+type PaymentOption struct {
 	orderID      string
 	paymentType  PaymentMethodType
 	instrumentID string
@@ -19,15 +9,13 @@ type paymentOption struct {
 	currency     CurrencyType
 }
 
-var _ PaymentOption = (*paymentOption)(nil)
-
 func NewPaymentOption(
 	orderID string,
 	paymentType PaymentMethodType,
 	amount Money,
 	fee Fee,
-) *paymentOption {
-	return &paymentOption{
+) PaymentOption {
+	return PaymentOption{
 		orderID:     orderID,
 		paymentType: paymentType,
 		amount:      amount,
@@ -36,35 +24,34 @@ func NewPaymentOption(
 	}
 }
 
-func (p paymentOption) GetID() string {
-	//TODO implement me
-	panic("implement me")
+func (p PaymentOption) GetID() string {
+	return p.instrumentID
 }
 
-func (p paymentOption) GetCurrency() CurrencyType {
+func (p PaymentOption) GetCurrency() CurrencyType {
 	return p.currency
 }
 
-func (p paymentOption) GetPaymentType() PaymentMethodType {
+func (p PaymentOption) GetPaymentType() PaymentMethodType {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p paymentOption) GetFee() Fee {
+func (p PaymentOption) GetFee() Fee {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p paymentOption) GetSubtotal() Money {
+func (p PaymentOption) GetSubtotal() Money {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p paymentOption) GetTotal() Money {
+func (p PaymentOption) GetTotal() Money {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (p paymentOption) GetOrderID() string {
+func (p PaymentOption) GetOrderID() string {
 	return p.orderID
 }

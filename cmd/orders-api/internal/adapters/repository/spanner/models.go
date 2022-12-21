@@ -13,7 +13,7 @@ type Order struct {
 	CreatedAt        time.Time        `bun:"CreatedAt"`
 	UpdatedAt        time.Time        `bun:"UpdatedAt"`
 	SelectedOptionId string           `bun:"SelectedOptionId"`
-	PaymentOptions   []*PaymentOption `bun:"PaymentOptions,rel:has-many,join:OrderId=OrderId"`
+	PaymentOptions   []*PaymentOption `bun:"paymentOptions,rel:has-many,join:OrderId=OrderId"`
 	ExpiresAt        time.Time        `bun:"ExpiresAt"`
 	Amount           string           `bun:"Amount"`
 	CurrencyCode     string           `bun:"CurrencyCode"`

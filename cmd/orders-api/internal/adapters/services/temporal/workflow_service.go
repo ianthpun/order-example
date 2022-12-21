@@ -12,11 +12,6 @@ type workflowService struct {
 	client temporalsdk.Client
 }
 
-func (w workflowService) ConfirmOrder(ctx context.Context, orderID string, paymentOption domain.PaymentOption) error {
-	//TODO implement me
-	panic("implement me")
-}
-
 type ProcessOrderConfig struct {
 	Activities   interface{}
 	WorkflowFunc interface{}
@@ -46,7 +41,12 @@ func (w workflowService) StartOrder(ctx context.Context, order domain.Order) err
 	panic("implement me")
 }
 
-func (w workflowService) CancelOrder(ctx context.Context, orderId string) error {
+func (w workflowService) CancelOrder(ctx context.Context, orderID string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (w workflowService) ConfirmOrder(ctx context.Context, orderID string, paymentOptionID string) error {
 	//TODO implement me
 	panic("implement me")
 }

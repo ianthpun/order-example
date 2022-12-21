@@ -29,14 +29,14 @@ func NewConfirmOrderHandler(
 }
 
 type ConfirmOrderRequest struct {
-	OrderID       string
-	PaymentOption domain.PaymentOption
+	OrderID         string
+	PaymentOptionID string
 }
 
 func (c *confirmOrderUseCase) Handle(ctx context.Context, req ConfirmOrderRequest) error {
 	// TODO: run some validations first maybe
 
-	if err := c.workflowService.ConfirmOrder(ctx, req.OrderID, req.PaymentOption); err != nil {
+	if err := c.workflowService.ConfirmOrder(ctx, req.OrderID, req.PaymentOptionID); err != nil {
 		return err
 	}
 
