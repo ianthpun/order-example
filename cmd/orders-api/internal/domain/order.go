@@ -41,8 +41,8 @@ func NewOrder(
 		return nil, fmt.Errorf("userID cannot be nil")
 	}
 
-	if asset == nil {
-		return nil, fmt.Errorf("asset cannot be nil")
+	if asset.IsEmpty() {
+		return nil, fmt.Errorf("asset cannot be empty")
 	}
 
 	if price.IsZero() {
@@ -89,7 +89,7 @@ func UnmarshalOrderFromDatabase(
 	amount string,
 	currencyType string,
 ) (Order, error) {
-	var asset Asset
+	var asset *Asset
 	var err error
 
 	switch assetType {
@@ -108,7 +108,7 @@ func UnmarshalOrderFromDatabase(
 	o, err := NewOrder(
 		ID,
 		userID,
-		asset,
+		*asset,
 		NewMoney(amount, CurrencyType(currencyType)),
 	)
 	if err != nil {
