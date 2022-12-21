@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"go.temporal.io/sdk/workflow"
+	"go.uber.org/multierr"
 	"order-sample/cmd/orders-api/internal/domain"
 	"time"
 )
@@ -12,6 +13,10 @@ const (
 
 	ProcessOrderStateFailed    = "FAILED"
 	ProcessOrderStateSucceeded = "SUCCEEDED"
+
+	OrderDecisionCancelled = "CANCELLED"
+	OrderDecisionConfirmed = "CONFIRMED"
+	OrderDecisionExpired   = "EXPIRED"
 )
 
 // WithDefaultLocalActivityOptions returns the default local activity
@@ -44,11 +49,18 @@ type OrderPrice struct {
 // TemporalProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
 // other reasons.
 func TemporalProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err error) {
+	log := workflow.GetLogger(ctx)
+	defer func() {
+		if err != nil {
+			log.Error("failed to process workflow", err)
+		}
+	}()
+
+	log.Info("create new order", order)
+
 	var (
 		processOrderActivity TemporalProcessOrderActivity
 	)
-
-	workflow.GetLogger(ctx).Info("order in the beginning", order)
 
 	err = workflow.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
@@ -59,86 +71,78 @@ func TemporalProcessOrderWorkflow(ctx workflow.Context, order Order) (state stri
 		return ProcessOrderStateFailed, fmt.Errorf("failed to create order: %w", err)
 	}
 
+	log.Info("wait for order decision")
+
 	decision, err := waitForOrderDecision(ctx, order.OrderID)
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed waiting for order decicision: %w", err)
 	}
 
 	// if the order decision is not to continue, just return
-	if decision != domain.OrderStateConfirmed {
-		workflow.GetLogger(ctx).Info("state not confirmed, exiting", decision)
-		return decision.String(), nil
+	if decision != OrderDecisionConfirmed {
+		log.Info("state not confirmed, exiting", decision)
+		return decision, nil
 	}
 
-	//
-	//var paymentChargeID string
-	//
-	//// attempt to charge the order
-	//err = workflow.ExecuteLocalActivity(
-	//	WithDefaultLocalActivityOptions(ctx),
-	//	processOrderActivity.ChargePayment,
-	//	order.GetID(),
-	//	order.GetUserID(),
-	//	order.GetSelectedPaymentOption(),
-	//).Get(ctx, &paymentChargeID)
-	//if err != nil {
-	//	return fmt.Errorf("failed to create order: %w", err)
-	//}
-	//
-	//paymentProcessedChannel := workflow.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
-	//
-	//{
-	//	selector := workflow.NewSelector(ctx)
-	//
-	//	selector.AddReceive(paymentProcessedChannel, func(c workflow.ReceiveChannel, _ bool) {
-	//		var event ConfirmOrderRequest
-	//		c.Receive(ctx, &event)
-	//
-	//		err = workflow.ExecuteLocalActivity(
-	//			WithDefaultLocalActivityOptions(ctx),
-	//			processOrderActivity.ConfirmOrder,
-	//			event.OrderID,
-	//			event.PaymentOption,
-	//		).Get(ctx, &order)
-	//		if err != nil {
-	//			signalErr = err
-	//
-	//			return
-	//		}
-	//
-	//		// success state, continue
-	//		return
-	//	})
-	//
-	//	selector.Select(ctx)
-	//}
-	//
-	//if signalErr != nil {
-	//	return signalErr
-	//}
-	//
-	//// refund payment if anything fails moving forward
-	//defer func() {
-	//	if err != nil {
-	//		err = workflow.ExecuteLocalActivity(
-	//			WithDefaultLocalActivityOptions(ctx),
-	//			nil,
-	//			processOrderActivity.RefundPayment,
-	//			paymentChargeID,
-	//		).Get(ctx, &order)
-	//		if err != nil {
-	//			signalErr = err
-	//
-	//			return
-	//		}
-	//
-	//	}
-	//}()
+	log.Info("process the payment")
+	paymentChargeID, err := processPayment(ctx, order.OrderID)
+	if err != nil {
+		return ProcessOrderStateFailed, fmt.Errorf("failed to process payment: %w", err)
+	}
+
+	// refund payment if anything fails moving forward
+	defer func() {
+		if err != nil {
+			refundErr := workflow.ExecuteLocalActivity(
+				WithDefaultLocalActivityOptions(ctx),
+				nil,
+				processOrderActivity.RefundPayment,
+				paymentChargeID,
+			).Get(ctx, nil)
+
+			err = multierr.Append(err, refundErr)
+		}
+	}()
+
+	log.Info("deliver the order")
+	err = deliverOrder(ctx, order.OrderID, order.Asset)
+	if err != nil {
+		return ProcessOrderStateFailed, fmt.Errorf("failed to deliver order: %s", err)
+	}
 
 	return ProcessOrderStateSucceeded, nil
 }
 
-func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderState, error) {
+func deliverOrder(ctx workflow.Context, orderID string, asset OrderAsset) error {
+	switch asset.Type {
+	case domain.AssetTypeDapperCredit:
+
+	case domain.AssetTypeNFT:
+	}
+
+	return nil
+}
+
+func processPayment(ctx workflow.Context, orderID string) (string, error) {
+	var (
+		paymentChargeID      string
+		processOrderActivity TemporalProcessOrderActivity
+	)
+
+	// attempt to charge the order
+	err := workflow.ExecuteLocalActivity(
+		WithDefaultLocalActivityOptions(ctx),
+		processOrderActivity.ChargePayment,
+		orderID,
+	).Get(ctx, &paymentChargeID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create order: %w", err)
+	}
+
+	return paymentChargeID, nil
+}
+
+func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) {
 	// wait for confirm/cancel/expiry signal
 	confirmOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
 	cancelOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CANCEL_ORDER_CHANNEL)
@@ -147,10 +151,9 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderSta
 
 	var (
 		processOrderActivity TemporalProcessOrderActivity
-		orderState           domain.OrderState
+		orderDecision        string
+		signalErr            error
 	)
-
-	var signalErr error
 	{
 		selector := workflow.NewSelector(ctx)
 
@@ -170,7 +173,7 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderSta
 
 				return
 			}
-			orderState = domain.OrderStateConfirmed
+			orderDecision = OrderDecisionConfirmed
 
 			return
 		})
@@ -188,7 +191,7 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderSta
 				return
 			}
 
-			orderState = domain.OrderStateCancelled
+			orderDecision = OrderDecisionCancelled
 
 			return
 		})
@@ -206,7 +209,7 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderSta
 				return
 			}
 
-			orderState = domain.OrderStateExpired
+			orderDecision = OrderDecisionExpired
 
 			return
 		})
@@ -218,5 +221,5 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (domain.OrderSta
 		return "", signalErr
 	}
 
-	return orderState, nil
+	return orderDecision, nil
 }

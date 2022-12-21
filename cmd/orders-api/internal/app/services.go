@@ -11,7 +11,7 @@ type PaymentService interface {
 		ctx context.Context,
 		userID string,
 		types []domain.PaymentMethodType,
-	) ([]domain.PaymentMethod, error)
+	) ([]domain.PaymentInstrument, error)
 	ChargePayment(
 		ctx context.Context,
 		orderID string,

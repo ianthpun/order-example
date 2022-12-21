@@ -75,6 +75,11 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 			return nil
 		})
 
+	s.env.OnActivity(activity.ChargePayment, mock.Anything, mock.Anything).Return(
+		func(ctx context.Context, orderID string) (string, error) {
+			return "charge-id", nil
+		})
+
 	s.env.ExecuteWorkflow(
 		app.TemporalProcessOrderWorkflow,
 		request,

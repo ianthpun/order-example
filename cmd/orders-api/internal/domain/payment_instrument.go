@@ -1,16 +1,9 @@
 package domain
 
-type PaymentMethod interface {
-	GetID() string
-	GetPaymentMethodType() PaymentMethodType
-}
-
-type paymentInstrument struct {
+type PaymentInstrument struct {
 	id                    string
 	paymentInstrumentType PaymentMethodType
 }
-
-var _ PaymentMethod = (*paymentInstrument)(nil)
 
 type PaymentMethodType string
 
@@ -20,18 +13,18 @@ const (
 	PaymentMethodTypeCoinbaseCrypto PaymentMethodType = "COINBASE_CRYPTO"
 )
 
-func NewPaymentInstrument(id string, paymentType PaymentMethodType) paymentInstrument {
-	return paymentInstrument{
+func NewPaymentInstrument(id string, paymentType PaymentMethodType) PaymentInstrument {
+	return PaymentInstrument{
 		id:                    id,
 		paymentInstrumentType: paymentType,
 	}
 }
 
-func (p *paymentInstrument) GetPaymentMethodType() PaymentMethodType {
+func (p *PaymentInstrument) GetPaymentMethodType() PaymentMethodType {
 	return p.paymentInstrumentType
 }
 
-func (p *paymentInstrument) GetID() string {
+func (p *PaymentInstrument) GetID() string {
 	//TODO implement me
 	panic("implement me")
 }

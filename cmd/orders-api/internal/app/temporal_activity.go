@@ -31,14 +31,17 @@ func NewTemporalProcessOrderActivity(
 func (a *TemporalProcessOrderActivity) ChargePayment(
 	ctx context.Context,
 	orderID string,
-	userID string,
-	option domain.PaymentOption,
 ) (string, error) {
+	order, err := a.OrderRepository.GetOrder(ctx, orderID)
+	if err != nil {
+		return "", err
+	}
+
 	paymentChargeID, err := a.PaymentService.ChargePayment(
 		ctx,
-		orderID,
-		userID,
-		option,
+		order.GetID(),
+		order.GetUserID(),
+		order.GetSelectedPaymentOption(),
 	)
 	if err != nil {
 		return "", err
@@ -48,6 +51,19 @@ func (a *TemporalProcessOrderActivity) ChargePayment(
 }
 
 func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID string) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.Cancel(); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
+}
+
+func (a *TemporalProcessOrderActivity) DeliverOrder(ctx context.Context, orderID string) error {
 	return a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,

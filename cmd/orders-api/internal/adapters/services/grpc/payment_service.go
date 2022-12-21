@@ -20,6 +20,6 @@ func (ps *paymentService) GetPaymentMethods(
 	ctx context.Context,
 	userID string,
 	types []domain.PaymentMethodType,
-) ([]domain.PaymentMethod, error) {
-	return []domain.PaymentMethod{}, nil
+) ([]domain.PaymentInstrument, error) {
+	return []domain.PaymentInstrument{}, nil
 }

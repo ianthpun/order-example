@@ -173,9 +173,8 @@ func (o *Order) GetPrice() Money {
 	return o.price
 }
 
-func (o *Order) GetSelectedPaymentOption() []PaymentOption {
-	//TODO implement me
-	panic("implement me")
+func (o *Order) GetSelectedPaymentOption() PaymentOption {
+	return o.selectedOption
 }
 
 func (o *Order) GetStateChanges() []Message {
