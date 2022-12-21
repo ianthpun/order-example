@@ -3,7 +3,6 @@ package app_test
 import (
 	"context"
 	"github.com/google/uuid"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
@@ -39,15 +38,15 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 		domain.NewMoney("10.00", domain.CurrencyTypeUSD),
 	)
 
-	request := app.ProcessOrderRequest{
+	request := app.Order{
 		OrderID: order.GetID(),
 		UserID:  order.GetUserID(),
-		Asset: app.ProcessOrderAsset{
+		Asset: app.OrderAsset{
 			ID:   order.GetAsset().GetID(),
 			Type: order.GetAsset().GetAssetType(),
 			Name: order.GetAsset().GetName(),
 		},
-		Price: app.ProcessOrderPrice{
+		Price: app.OrderPrice{
 			Amount:       order.GetPrice().GetAmount(),
 			CurrencyType: order.GetPrice().GetCurrencyType(),
 		},
@@ -56,7 +55,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 	var activity app.TemporalProcessOrderActivity
 
 	s.env.OnActivity(activity.CreateOrder, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, order *domain.Order) error {
+		func(ctx context.Context, order app.Order) error {
 			return nil
 		})
 
@@ -72,11 +71,8 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 	}, time.Millisecond)
 
 	s.env.OnActivity(activity.ConfirmOrder, mock.Anything, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, id string, paymentOptionID string) (*domain.Order, error) {
-			o := *order
-			err := o.ConfirmPaymentOption(paymentOptionID)
-			assert.NoError(s.T(), err)
-			return &o, nil
+		func(ctx context.Context, id string, paymentOptionID string) error {
+			return nil
 		})
 
 	s.env.ExecuteWorkflow(
@@ -110,7 +106,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 //
 //	s.env.ExecuteWorkflow(
 //		app.TemporalProcessOrderWorkflow,
-//		app.ProcessOrderRequest{Order: *order},
+//		app.Order{Order: *order},
 //	)
 //
 //	s.True(s.env.IsWorkflowCompleted())

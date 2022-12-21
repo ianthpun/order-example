@@ -47,70 +47,50 @@ func (a *TemporalProcessOrderActivity) ChargePayment(
 	return paymentChargeID, nil
 }
 
-func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID string) (domain.Order, error) {
-	var o domain.Order
-	err := a.OrderRepository.UpdateOrder(
+func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID string) error {
+	return a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
 		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			o = *order
-			if err := o.Cancel(); err != nil {
+			if err := order.Cancel(); err != nil {
 				return nil, err
 			}
 
-			return &o, nil
+			return order, nil
 		})
-	if err != nil {
-		return domain.Order{}, err
-	}
-
-	return o, nil
 }
 
 func (a *TemporalProcessOrderActivity) ConfirmOrder(
 	ctx context.Context,
 	orderID string,
 	paymentOptionID string,
-) (*domain.Order, error) {
-	var o *domain.Order
-	if err := a.OrderRepository.UpdateOrder(
+) error {
+	return a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
 		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			o = order
-			if err := o.ConfirmPaymentOption(paymentOptionID); err != nil {
+			if err := order.ConfirmPaymentOption(paymentOptionID); err != nil {
 				return nil, err
 			}
 
-			return o, nil
-		}); err != nil {
-		return nil, err
-	}
-
-	return o, nil
+			return order, nil
+		})
 }
 
 func (a *TemporalProcessOrderActivity) ExpireOrder(
 	ctx context.Context,
 	orderID string,
-) (domain.Order, error) {
-	var o domain.Order
-	err := a.OrderRepository.UpdateOrder(
+) error {
+	return a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
 		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			o = *order
-			if err := o.Expire(); err != nil {
+			if err := order.Expire(); err != nil {
 				return nil, err
 			}
 
-			return &o, nil
+			return order, nil
 		})
-	if err != nil {
-		return domain.Order{}, err
-	}
-
-	return o, nil
 }
 
 func (a *TemporalProcessOrderActivity) RefundPayment(
@@ -122,9 +102,28 @@ func (a *TemporalProcessOrderActivity) RefundPayment(
 
 func (a *TemporalProcessOrderActivity) CreateOrder(
 	ctx context.Context,
-	order *domain.Order,
+	order Order,
 ) error {
-	return a.OrderRepository.InsertNewOrder(ctx, *order)
+	o, err := toOrderDomain(order)
+	if err != nil {
+		return err
+	}
+
+	return a.OrderRepository.InsertNewOrder(ctx, *o)
+}
+
+func toOrderDomain(o Order) (*domain.Order, error) {
+	asset, err := domain.NewNFTAsset(o.Asset.ID, o.Asset.Name)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain.NewOrder(
+		o.OrderID,
+		o.UserID,
+		*asset,
+		domain.NewMoney(o.Price.Amount, o.Price.CurrencyType),
+	)
 }
 
 func (a *TemporalProcessOrderActivity) UpdateOrder(
