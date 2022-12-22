@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/mock"
 	"order-sample/cmd/orders-api/internal/app/workflows"
 	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/internal/protobuf/orders"
 	"testing"
 	"time"
 
@@ -42,9 +43,9 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
 			workflows.SignalChannels.CONFIRM_ORDER_CHANNEL,
-			workflows.ConfirmOrderSignal{
-				OrderID:         request.OrderID,
-				PaymentOptionID: uuid.NewString(),
+			orders.WorkflowConfirmOrderSignal{
+				OrderId:         request.OrderID,
+				PaymentOptionId: uuid.NewString(),
 			},
 		)
 
@@ -120,10 +121,10 @@ func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
 
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
-			workflows.SignalChannels.CANCEL_ORDER_CHANNEL,
-			workflows.ConfirmOrderSignal{
-				OrderID:         request.OrderID,
-				PaymentOptionID: uuid.NewString(),
+			orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
+			orders.WorkflowConfirmOrderSignal{
+				OrderId:         request.OrderID,
+				PaymentOptionId: uuid.NewString(),
 			},
 		)
 

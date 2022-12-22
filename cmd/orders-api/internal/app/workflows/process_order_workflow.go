@@ -2,9 +2,10 @@ package workflows
 
 import (
 	"fmt"
-	"go.temporal.io/sdk/workflow"
+	workflowsdk "go.temporal.io/sdk/workflow"
 	"go.uber.org/multierr"
 	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/internal/protobuf/orders"
 	"time"
 )
 
@@ -42,24 +43,24 @@ type OrderPrice struct {
 
 // ProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
 // other reasons.
-func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err error) {
-	log := workflow.GetLogger(ctx)
+func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequest) (state string, err error) {
+	log := workflowsdk.GetLogger(ctx)
 	defer func() {
 		if err != nil {
 			log.Error("failed to process workflow", err)
 		}
 	}()
 
-	log.Info("create new order", order)
+	log.Info("create new order", req)
 
 	var (
 		processOrderActivity ProcessOrderActivities
 	)
 
-	err = workflow.ExecuteLocalActivity(
+	err = workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
 		processOrderActivity.CreateOrder,
-		order,
+		req,
 	).Get(ctx, nil)
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed to create order: %w", err)
@@ -67,19 +68,19 @@ func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err 
 
 	log.Info("wait for order decision")
 
-	decision, err := waitForOrderDecision(ctx, order.OrderID)
+	decision, err := waitForOrderDecision(ctx, req.GetOrderId())
 	if err != nil {
-		return ProcessOrderStateFailed, fmt.Errorf("failed waiting for order decicision: %w", err)
+		return ProcessOrderStateFailed, fmt.Errorf("failed waiting for order decision: %w", err)
 	}
 
-	// if the order decision is not to continue, just return
+	// if the req decision is not to continue, just return
 	if decision != OrderDecisionConfirmed {
 		log.Info("state not confirmed, exiting", decision)
 		return decision, nil
 	}
 
 	log.Info("process the payment")
-	paymentChargeID, err := processPayment(ctx, order.OrderID)
+	paymentChargeID, err := processPayment(ctx, req.GetOrderId())
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed to process payment: %w", err)
 	}
@@ -87,7 +88,7 @@ func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err 
 	// refund payment if anything fails moving forward
 	defer func() {
 		if err != nil {
-			refundErr := workflow.ExecuteLocalActivity(
+			refundErr := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				nil,
 				processOrderActivity.RefundPayment,
@@ -99,7 +100,7 @@ func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err 
 	}()
 
 	log.Info("deliver the order")
-	err = deliverOrder(ctx, order)
+	err = deliverOrder(ctx, req.GetOrderId())
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed to deliver order: %s", err)
 	}
@@ -110,9 +111,9 @@ func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err 
 }
 
 // wait for confirm/cancel signal
-func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) {
-	confirmOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
-	cancelOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CANCEL_ORDER_CHANNEL)
+func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, error) {
+	confirmOrderChannel := workflowsdk.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
+	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, SignalChannels.CANCEL_ORDER_CHANNEL)
 
 	var (
 		processOrderActivity ProcessOrderActivities
@@ -120,17 +121,17 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 		signalErr            error
 	)
 	{
-		selector := workflow.NewSelector(ctx)
+		selector := workflowsdk.NewSelector(ctx)
 
-		selector.AddReceive(confirmOrderChannel, func(c workflow.ReceiveChannel, _ bool) {
-			var event ConfirmOrderSignal
+		selector.AddReceive(confirmOrderChannel, func(c workflowsdk.ReceiveChannel, _ bool) {
+			var event orders.WorkflowConfirmOrderSignal
 			c.Receive(ctx, &event)
 
-			err := workflow.ExecuteLocalActivity(
+			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				processOrderActivity.ConfirmOrder,
 				orderID,
-				event.PaymentOptionID,
+				event.GetPaymentOptionId(),
 			).Get(ctx, nil)
 			if err != nil {
 				signalErr = err
@@ -142,8 +143,8 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 			return
 		})
 
-		selector.AddReceive(cancelOrderChannel, func(c workflow.ReceiveChannel, _ bool) {
-			err := workflow.ExecuteLocalActivity(
+		selector.AddReceive(cancelOrderChannel, func(c workflowsdk.ReceiveChannel, _ bool) {
+			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				processOrderActivity.CancelOrder,
 				orderID,
@@ -159,8 +160,8 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 			return
 		})
 		// if no signal comes back before the order expiry time, expire the order
-		selector.AddFuture(workflow.NewTimer(ctx, orderExpiryTime), func(f workflow.Future) {
-			err := workflow.ExecuteLocalActivity(
+		selector.AddFuture(workflowsdk.NewTimer(ctx, orderExpiryTime), func(f workflowsdk.Future) {
+			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				processOrderActivity.ExpireOrder,
 				orderID,
@@ -186,14 +187,14 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 	return orderDecision, nil
 }
 
-func processPayment(ctx workflow.Context, orderID string) (string, error) {
+func processPayment(ctx workflowsdk.Context, orderID string) (string, error) {
 	var (
 		paymentChargeID      string
 		processOrderActivity ProcessOrderActivities
 	)
 
 	// attempt to charge the order
-	err := workflow.ExecuteLocalActivity(
+	err := workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
 		processOrderActivity.ChargePayment,
 		orderID,
@@ -205,15 +206,15 @@ func processPayment(ctx workflow.Context, orderID string) (string, error) {
 	return paymentChargeID, nil
 }
 
-func deliverOrder(ctx workflow.Context, order Order) error {
+func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	var (
 		processOrderActivity ProcessOrderActivities
 	)
 
-	err := workflow.ExecuteLocalActivity(
+	err := workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
 		processOrderActivity.DeliverOrder,
-		order.OrderID,
+		orderID,
 	).Get(ctx, nil)
 	if err != nil {
 		return err

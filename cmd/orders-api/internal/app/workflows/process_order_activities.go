@@ -3,6 +3,7 @@ package workflows
 import (
 	"context"
 	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/internal/protobuf/orders"
 )
 
 // PaymentService are all the capabilities of the payment service
@@ -131,9 +132,9 @@ func (a *ProcessOrderActivities) RefundPayment(
 
 func (a *ProcessOrderActivities) CreateOrder(
 	ctx context.Context,
-	order Order,
+	req *orders.WorkflowOrderRequest,
 ) error {
-	o, err := toOrderDomain(order)
+	o, err := toOrderDomain(req)
 	if err != nil {
 		return err
 	}
@@ -141,16 +142,18 @@ func (a *ProcessOrderActivities) CreateOrder(
 	return a.OrderRepository.InsertNewOrder(ctx, *o)
 }
 
-func toOrderDomain(o Order) (*domain.Order, error) {
-	asset, err := domain.NewDapperCreditAsset(domain.NewMoney(o.Price.Amount, o.Price.CurrencyType))
+func toOrderDomain(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
+	asset, err := domain.NewDapperCreditAsset(
+		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
+	)
 	if err != nil {
 		return nil, err
 	}
 
 	return domain.NewOrder(
-		o.OrderID,
-		o.UserID,
+		req.GetOrderId(),
+		req.GetUserId(),
 		*asset,
-		domain.NewMoney(o.Price.Amount, o.Price.CurrencyType),
+		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
 	)
 }

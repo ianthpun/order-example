@@ -2,14 +2,34 @@ syntax = "proto3";
 
 package orders;
 
-import "google/protobuf/timestamp.proto";
+import "common/currency.proto";
 
-service OrderService {
-  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {}
+message Order {
+  string id = 1;
+  string user_id = 2;
+  OrderState state = 3;
+  Asset asset = 4;
+  Price price = 5;
 }
 
-message CreateOrderRequest {
+enum OrderState {
+  ORDER_STATE_UNSPECIFIED = 0;
+  ORDER_STATE_SUCCEEDED = 1;
+  ORDER_STATE_FAILED = 2;
 }
 
-message CreateOrderResponse {
+message Asset {
+  string id = 1;
+  AssetType asset_type = 2;
+  string name = 3;
+}
+
+enum AssetType {
+  ASSET_TYPE_UNSPECIFIED = 0;
+  ASSET_TYPE_DAPPER_CREDIT = 1;
+}
+
+message Price {
+  string amount = 1;
+  currency.CurrencyType currency_type = 2;
 }

@@ -6,5 +6,6 @@ install-proto-tools:
 
 .PHONY: generate-proto
 generate-proto: install-proto-tools
+	rm -rf internal/protobuf
 	cd ./api/proto \
 	 && buf generate
