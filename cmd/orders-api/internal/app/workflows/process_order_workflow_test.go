@@ -42,7 +42,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
-			workflows.SignalChannels.CONFIRM_ORDER_CHANNEL,
+			orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
 			orders.WorkflowConfirmOrderSignal{
 				OrderId:         request.OrderID,
 				PaymentOptionId: uuid.NewString(),
@@ -121,10 +121,9 @@ func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
 
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
-			orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
-			orders.WorkflowConfirmOrderSignal{
-				OrderId:         request.OrderID,
-				PaymentOptionId: uuid.NewString(),
+			orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String(),
+			orders.WorkflowCancelOrderSignal{
+				OrderId: request.OrderID,
 			},
 		)
 

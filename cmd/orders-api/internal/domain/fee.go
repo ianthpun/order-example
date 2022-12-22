@@ -19,10 +19,10 @@ func NewNoFee() Fee {
 	}
 }
 
-func (f *Fee) GetAmount() string {
+func (f Fee) GetAmount() string {
 	return f.amount
 }
 
-func (f *Fee) GetDescription() string {
+func (f Fee) GetDescription() string {
 	return f.description
 }

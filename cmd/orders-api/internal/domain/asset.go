@@ -2,21 +2,23 @@ package domain
 
 import "fmt"
 
-type AssetType string
-
 const (
 	AssetTypeNFT          AssetType = "NFT"
 	AssetTypeDapperCredit AssetType = "DAPPER_CREDIT"
-)
 
-func (a AssetType) String() string {
-	return string(a)
-}
+	dapperCreditID = "DAPPER_CREDIT"
+)
 
 type Asset struct {
 	id        string
 	name      string
 	assetType AssetType
+}
+
+type AssetType string
+
+func (a AssetType) String() string {
+	return string(a)
 }
 
 func (a Asset) IsEmpty() bool {
@@ -34,10 +36,6 @@ func (a Asset) GetID() string {
 func (a Asset) GetName() string {
 	return a.name
 }
-
-const (
-	dapperCreditID = "DAPPER_CREDIT"
-)
 
 func NewDapperCreditAsset(amount Money) (*Asset, error) {
 	if amount.GetCurrencyType() != CurrencyTypeUSD {

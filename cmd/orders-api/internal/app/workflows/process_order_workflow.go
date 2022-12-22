@@ -112,8 +112,8 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 
 // wait for confirm/cancel signal
 func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, error) {
-	confirmOrderChannel := workflowsdk.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
-	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, SignalChannels.CANCEL_ORDER_CHANNEL)
+	confirmOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String())
+	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String())
 
 	var (
 		processOrderActivity ProcessOrderActivities

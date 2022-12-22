@@ -12,13 +12,17 @@ message WorkflowOrderRequest {
     orders.Price price = 4;
 }
 
+enum WorkflowSignal {
+  WORKFLOW_SIGNAL_UNSPECIFIED = 0;
+  WORKFLOW_SIGNAL_CANCEL_ORDER = 1;
+  WORKFLOW_SIGNAL_CONFIRM_ORDER = 2;
+}
+
 message WorkflowConfirmOrderSignal {
   string order_id = 1;
   string payment_option_id = 2;
 }
 
-enum WorkflowSignal {
-  WORKFLOW_SIGNAL_UNSPECIFIED = 0;
-  WORKFLOW_SIGNAL_CANCEL_ORDER = 1;
-  WORKFLOW_SIGNAL_CONFIRM_ORDER = 2;
+message WorkflowCancelOrderSignal {
+  string order_id = 1;
 }

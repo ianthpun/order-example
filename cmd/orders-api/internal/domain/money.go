@@ -3,8 +3,7 @@ package domain
 type CurrencyType string
 
 const (
-	CurrencyTypeUSD  CurrencyType = "USD"
-	CurrencyTypeFLOW CurrencyType = "FLOW"
+	CurrencyTypeUSD CurrencyType = "USD"
 )
 
 func (c CurrencyType) String() string {

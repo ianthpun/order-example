@@ -28,30 +28,18 @@ func (p PaymentOption) GetID() string {
 	return p.instrumentID
 }
 
+func (p PaymentOption) GetOrderID() string {
+	return p.orderID
+}
+
 func (p PaymentOption) GetCurrency() CurrencyType {
 	return p.currency
 }
 
-func (p PaymentOption) GetPaymentType() PaymentMethodType {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (p PaymentOption) GetFee() Fee {
-	//TODO implement me
-	panic("implement me")
+	return p.fee
 }
 
 func (p PaymentOption) GetSubtotal() Money {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p PaymentOption) GetTotal() Money {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (p PaymentOption) GetOrderID() string {
-	return p.orderID
+	return p.amount
 }

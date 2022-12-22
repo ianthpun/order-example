@@ -5,6 +5,18 @@ import (
 	"time"
 )
 
+type Order struct {
+	id             string
+	asset          Asset
+	state          OrderState
+	selectedOption PaymentOption
+	userID         string
+	merchantID     string
+	price          Money
+	paymentOptions []PaymentOption
+	createdAt      time.Time
+}
+
 type OrderState string
 
 const (
@@ -16,17 +28,6 @@ const (
 
 func (o OrderState) String() string {
 	return string(o)
-}
-
-type Order struct {
-	id             string
-	asset          Asset
-	state          OrderState
-	selectedOption PaymentOption
-	userID         string
-	merchantID     string
-	price          Money
-	paymentOptions []PaymentOption
 }
 
 func NewOrder(
@@ -54,6 +55,7 @@ func NewOrder(
 		price:          price,
 		state:          OrderStateCreated,
 		paymentOptions: paymentOptions(ID, price, asset),
+		createdAt:      time.Now(),
 	}, nil
 }
 
@@ -74,6 +76,67 @@ func paymentOptions(orderID string, price Money, asset Asset) []PaymentOption {
 	default:
 		return []PaymentOption{}
 	}
+}
+
+func (o *Order) GetPaymentOptions() []PaymentOption {
+	return o.paymentOptions
+}
+
+func (o *Order) GetOrderState() OrderState {
+	return o.state
+}
+
+func (o *Order) GetID() string {
+	return o.id
+}
+
+func (o *Order) GetUserID() string {
+	return o.userID
+}
+
+func (o *Order) GetAsset() Asset {
+	return o.asset
+}
+
+func (o *Order) GetCreatedAt() time.Time {
+	return o.createdAt
+}
+
+func (o *Order) GetPrice() Money {
+	return o.price
+}
+
+func (o *Order) GetSelectedPaymentOption() PaymentOption {
+	return o.selectedOption
+}
+
+func (o *Order) Cancel() error {
+	if o.state != OrderStateCreated {
+		return fmt.Errorf("cannot cancel state is it is not in created state: %s", o.state)
+	}
+
+	o.state = OrderStateCancelled
+
+	return nil
+}
+
+func (o *Order) ConfirmPaymentOption(paymentOptionID string) error {
+	for _, po := range o.paymentOptions {
+		if paymentOptionID == po.GetID() {
+			o.selectedOption = po
+			o.state = OrderStateConfirmed
+
+			return nil
+		}
+	}
+
+	return fmt.Errorf("paymentOptionID %s was not part of order", paymentOptionID)
+}
+
+func (o *Order) Expire() error {
+	o.state = OrderStateExpired
+
+	return nil
 }
 
 // UnmarshalOrderFromDatabase will return an order. Use this function strictly for unmarshalling from the database,
@@ -118,10 +181,6 @@ func UnmarshalOrderFromDatabase(
 	return *o, nil
 }
 
-func (o *Order) GetPaymentOptions() []PaymentOption {
-	return o.paymentOptions
-}
-
 func (o *Order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Money, fees Money, err error) {
 	switch paymentType {
 	case PaymentMethodTypeCoinbaseCrypto, PaymentMethodTypeDapperCredit:
@@ -135,66 +194,4 @@ func (o *Order) getPaymentOptionCharge(paymentType PaymentMethodType) (amount Mo
 	}
 
 	return
-}
-
-func (o *Order) IsExpired() bool {
-	return o.GetOrderState() == OrderStateExpired
-}
-
-func (o *Order) GetOrderState() OrderState {
-	return o.state
-}
-
-func (o *Order) GetID() string {
-	return o.id
-}
-
-func (o *Order) GetUserID() string {
-	return o.userID
-}
-
-func (o *Order) GetAsset() Asset {
-	return o.asset
-}
-
-func (o *Order) GetCreatedAt() time.Time {
-	//TODO implement me
-	panic("implement me")
-}
-
-func (o *Order) GetPrice() Money {
-	return o.price
-}
-
-func (o *Order) GetSelectedPaymentOption() PaymentOption {
-	return o.selectedOption
-}
-
-func (o *Order) Cancel() error {
-	if o.state != OrderStateCreated {
-		return fmt.Errorf("cannot cancel state is it is not in created state: %s", o.state)
-	}
-
-	o.state = OrderStateCancelled
-
-	return nil
-}
-
-func (o *Order) ConfirmPaymentOption(paymentOptionID string) error {
-	for _, po := range o.paymentOptions {
-		if paymentOptionID == po.GetID() {
-			o.selectedOption = po
-			o.state = OrderStateConfirmed
-
-			return nil
-		}
-	}
-
-	return fmt.Errorf("paymentOptionID %s was not part of order", paymentOptionID)
-}
-
-func (o *Order) Expire() error {
-	o.state = OrderStateExpired
-
-	return nil
 }
