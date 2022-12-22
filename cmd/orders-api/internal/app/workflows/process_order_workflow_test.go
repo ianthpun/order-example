@@ -111,13 +111,19 @@ func TestUnitTestSuite(t *testing.T) {
 }
 
 func testOrderRequest() workflows.Order {
-	asset, _ := domain.NewNFTAsset(uuid.NewString(), "cool doodle")
-	order, _ := domain.NewOrder(
+	asset, err := domain.NewNFTAsset(uuid.NewString(), "cool doodle")
+	if err != nil {
+		panic(err)
+	}
+	order, err := domain.NewOrder(
 		uuid.NewString(),
 		uuid.NewString(),
 		*asset,
 		domain.NewMoney("10.00", domain.CurrencyTypeUSD),
 	)
+	if err != nil {
+		panic(err)
+	}
 
 	return workflows.Order{
 		OrderID: order.GetID(),
