@@ -1,31 +1,26 @@
-package app
+package order
 
 import (
 	"context"
 	"fmt"
+	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
-type CreateOrderHandler QueryHandler[CreateOrderRequest, domain.Order]
+type CreateOrderHandler app.QueryHandler[CreateOrderRequest, domain.Order]
 
 type createOrderUseCase struct {
-	paymentService  PaymentService
-	assetService    AssetService
-	orderRepository domain.OrderRepository
-	orderWorkflow   OrderWorkflow
+	assetService  AssetService
+	orderWorkflow OrderWorkflow
 }
 
 func NewCreateOrderHandler(
-	paymentService PaymentService,
 	assetService AssetService,
-	orderRepository domain.OrderRepository,
 	orderWorkflow OrderWorkflow,
 ) *createOrderUseCase {
 	return &createOrderUseCase{
-		paymentService:  paymentService,
-		assetService:    assetService,
-		orderRepository: orderRepository,
-		orderWorkflow:   orderWorkflow,
+		assetService:  assetService,
+		orderWorkflow: orderWorkflow,
 	}
 }
 

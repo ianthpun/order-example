@@ -1,35 +1,28 @@
 package domain
 
-type Fee interface {
-	GetAmount() string
-	GetDescription() string
-}
-
-type fee struct {
+type Fee struct {
 	amount      string
 	description string
 }
 
-var _ Fee = (*fee)(nil)
-
-func NewFee(amount, description string) *fee {
-	return &fee{
+func NewFee(amount, description string) Fee {
+	return Fee{
 		amount:      amount,
 		description: description,
 	}
 }
 
-func NewNoFee() *fee {
-	return &fee{
+func NewNoFee() Fee {
+	return Fee{
 		amount:      "0",
-		description: "no fee",
+		description: "no Fee",
 	}
 }
 
-func (f *fee) GetAmount() string {
+func (f *Fee) GetAmount() string {
 	return f.amount
 }
 
-func (f *fee) GetDescription() string {
+func (f *Fee) GetDescription() string {
 	return f.description
 }

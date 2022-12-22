@@ -17,3 +17,8 @@ func (ps *assetService) IsAvailable(
 ) (bool, error) {
 	return true, nil
 }
+
+func (ps *assetService) Deliver(ctx context.Context, order domain.Order) error {
+	//TODO implement me
+	panic("implement me")
+}

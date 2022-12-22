@@ -1,28 +1,21 @@
-package app
+package order
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/cmd/orders-api/internal/app"
 )
 
-type ConfirmOrderHandler CommandHandler[ConfirmOrderRequest]
+type ConfirmOrderHandler app.CommandHandler[ConfirmOrderRequest]
 
 type confirmOrderUseCase struct {
-	paymentService  PaymentService
-	assetService    AssetService
-	orderRepository domain.OrderRepository
 	workflowService OrderWorkflow
 }
 
 func NewConfirmOrderHandler(
-	paymentService PaymentService,
-	assetService AssetService,
-	orderRepository domain.OrderRepository,
+	workflowService OrderWorkflow,
 ) *confirmOrderUseCase {
 	c := confirmOrderUseCase{
-		paymentService:  paymentService,
-		assetService:    assetService,
-		orderRepository: orderRepository,
+		workflowService: workflowService,
 	}
 
 	return &c
@@ -34,8 +27,6 @@ type ConfirmOrderRequest struct {
 }
 
 func (c *confirmOrderUseCase) Handle(ctx context.Context, req ConfirmOrderRequest) error {
-	// TODO: run some validations first maybe
-
 	if err := c.workflowService.ConfirmOrder(ctx, req.OrderID, req.PaymentOptionID); err != nil {
 		return err
 	}

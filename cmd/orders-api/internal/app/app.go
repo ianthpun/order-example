@@ -6,6 +6,8 @@ import (
 	"order-sample/cmd/orders-api/internal/adapters/repository/spanner"
 	"order-sample/cmd/orders-api/internal/adapters/services/grpc"
 	"order-sample/cmd/orders-api/internal/adapters/services/temporal"
+	"order-sample/cmd/orders-api/internal/app/order"
+	"order-sample/cmd/orders-api/internal/app/workflows"
 )
 
 type Application struct {
@@ -14,9 +16,9 @@ type Application struct {
 
 // OrderHandler provides all OrderHandler capabilities
 type OrderHandler struct {
-	CreateOrder  CreateOrderHandler
-	ConfirmOrder ConfirmOrderHandler
-	CancelOrder  CancelOrderHandler
+	CreateOrder  order.CreateOrderHandler
+	ConfirmOrder order.ConfirmOrderHandler
+	CancelOrder  order.CancelOrderHandler
 }
 
 // CommandHandler
@@ -36,32 +38,26 @@ func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
 	workflowService := temporal.NewWorkflowService(
 		temporalClient,
 		temporal.ProcessOrderConfig{
-			Activities: NewTemporalProcessOrderActivity(
+			Activities: workflows.NewProcessOrderActivities(
 				paymentService,
 				assetService,
 				orderRepository,
 			),
-			WorkflowFunc: TemporalProcessOrderWorkflow,
+			WorkflowFunc: workflows.ProcessOrderWorkflow,
 		},
 	)
 
 	return Application{
 		Order: OrderHandler{
-			CreateOrder: NewCreateOrderHandler(
-				paymentService,
+			CreateOrder: order.NewCreateOrderHandler(
 				assetService,
-				orderRepository,
 				workflowService,
 			),
-			ConfirmOrder: NewConfirmOrderHandler(
-				paymentService,
-				assetService,
-				orderRepository,
+			ConfirmOrder: order.NewConfirmOrderHandler(
+				workflowService,
 			),
-			CancelOrder: NewCancelOrderHandler(
-				paymentService,
-				assetService,
-				orderRepository,
+			CancelOrder: order.NewCancelOrderHandler(
+				workflowService,
 			),
 		},
 	}

@@ -1,34 +1,33 @@
-package app
+package workflows
 
 import (
 	"context"
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
-// TemporalProcessOrderActivity is an activity that is used by our Temporal Workflow. Do not use this struct for other
+// ProcessOrderActivities is an activity that is used by our Temporal Workflow. Do not use this struct for other
 // reasons.
-type TemporalProcessOrderActivity struct {
+type ProcessOrderActivities struct {
 	PaymentService  PaymentService
 	AssetService    AssetService
 	OrderRepository domain.OrderRepository
-	app             Application
 }
 
-// NewTemporalProcessOrderActivity returns a temporal Activity used for Temporal workflows. Do not use this function for
+// NewProcessOrderActivities returns a temporal Activity used for Temporal workflows. Do not use this function for
 // other reasons.
-func NewTemporalProcessOrderActivity(
+func NewProcessOrderActivities(
 	paymentService PaymentService,
 	assetService AssetService,
 	orderRepository domain.OrderRepository,
-) *TemporalProcessOrderActivity {
-	return &TemporalProcessOrderActivity{
+) *ProcessOrderActivities {
+	return &ProcessOrderActivities{
 		PaymentService:  paymentService,
 		AssetService:    assetService,
 		OrderRepository: orderRepository,
 	}
 }
 
-func (a *TemporalProcessOrderActivity) ChargePayment(
+func (a *ProcessOrderActivities) ChargePayment(
 	ctx context.Context,
 	orderID string,
 ) (string, error) {
@@ -50,7 +49,7 @@ func (a *TemporalProcessOrderActivity) ChargePayment(
 	return paymentChargeID, nil
 }
 
-func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID string) error {
+func (a *ProcessOrderActivities) CancelOrder(ctx context.Context, orderID string) error {
 	return a.OrderRepository.UpdateOrder(
 		ctx,
 		orderID,
@@ -63,20 +62,16 @@ func (a *TemporalProcessOrderActivity) CancelOrder(ctx context.Context, orderID 
 		})
 }
 
-func (a *TemporalProcessOrderActivity) DeliverOrder(ctx context.Context, orderID string) error {
-	return a.OrderRepository.UpdateOrder(
-		ctx,
-		orderID,
-		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			if err := order.Cancel(); err != nil {
-				return nil, err
-			}
+func (a *ProcessOrderActivities) DeliverOrder(ctx context.Context, orderID string) error {
+	order, err := a.OrderRepository.GetOrder(ctx, orderID)
+	if err != nil {
+		return err
+	}
 
-			return order, nil
-		})
+	return a.AssetService.Deliver(ctx, order)
 }
 
-func (a *TemporalProcessOrderActivity) ConfirmOrder(
+func (a *ProcessOrderActivities) ConfirmOrder(
 	ctx context.Context,
 	orderID string,
 	paymentOptionID string,
@@ -93,7 +88,7 @@ func (a *TemporalProcessOrderActivity) ConfirmOrder(
 		})
 }
 
-func (a *TemporalProcessOrderActivity) ExpireOrder(
+func (a *ProcessOrderActivities) ExpireOrder(
 	ctx context.Context,
 	orderID string,
 ) error {
@@ -109,14 +104,14 @@ func (a *TemporalProcessOrderActivity) ExpireOrder(
 		})
 }
 
-func (a *TemporalProcessOrderActivity) RefundPayment(
+func (a *ProcessOrderActivities) RefundPayment(
 	ctx context.Context,
 	paymentChargeID string,
 ) error {
 	return nil
 }
 
-func (a *TemporalProcessOrderActivity) CreateOrder(
+func (a *ProcessOrderActivities) CreateOrder(
 	ctx context.Context,
 	order Order,
 ) error {
@@ -140,22 +135,4 @@ func toOrderDomain(o Order) (*domain.Order, error) {
 		*asset,
 		domain.NewMoney(o.Price.Amount, o.Price.CurrencyType),
 	)
-}
-
-func (a *TemporalProcessOrderActivity) UpdateOrder(
-	ctx context.Context,
-	order domain.Order,
-) (domain.Order, error) {
-	var o domain.Order
-	err := a.OrderRepository.UpdateOrder(
-		ctx,
-		order.GetID(),
-		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
-			return order, nil
-		})
-	if err != nil {
-		return domain.Order{}, err
-	}
-
-	return o, nil
 }

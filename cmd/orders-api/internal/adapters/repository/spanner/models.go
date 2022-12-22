@@ -14,7 +14,6 @@ type Order struct {
 	UpdatedAt        time.Time        `bun:"UpdatedAt"`
 	SelectedOptionId string           `bun:"SelectedOptionId"`
 	PaymentOptions   []*PaymentOption `bun:"paymentOptions,rel:has-many,join:OrderId=OrderId"`
-	ExpiresAt        time.Time        `bun:"ExpiresAt"`
 	Amount           string           `bun:"Amount"`
 	CurrencyCode     string           `bun:"CurrencyCode"`
 }

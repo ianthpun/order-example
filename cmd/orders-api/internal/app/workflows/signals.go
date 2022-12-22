@@ -1,4 +1,4 @@
-package app
+package workflows
 
 var SignalChannels = struct {
 	CONFIRM_ORDER_CHANNEL     string

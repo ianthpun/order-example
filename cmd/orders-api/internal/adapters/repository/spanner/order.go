@@ -94,7 +94,6 @@ func orderToSpannerModel(o domain.Order) Order {
 		UserID:         o.GetUserID(),
 		CreatedAt:      o.GetCreatedAt(),
 		PaymentOptions: paymentOptionsToSpannerModel(o.GetPaymentOptions()),
-		ExpiresAt:      o.GetExpiresAt(),
 	}
 }
 

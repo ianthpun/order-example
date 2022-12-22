@@ -29,8 +29,6 @@ type Order struct {
 	paymentOptions []PaymentOption
 }
 
-var orderExpiry = 10 * time.Minute
-
 func NewOrder(
 	ID string,
 	userID string,
@@ -164,22 +162,12 @@ func (o *Order) GetCreatedAt() time.Time {
 	panic("implement me")
 }
 
-func (o *Order) GetExpiresAt() time.Time {
-	//TODO implement me
-	panic("implement me")
-}
-
 func (o *Order) GetPrice() Money {
 	return o.price
 }
 
 func (o *Order) GetSelectedPaymentOption() PaymentOption {
 	return o.selectedOption
-}
-
-func (o *Order) GetStateChanges() []Message {
-	//TODO implement me
-	panic("implement me")
 }
 
 func (o *Order) Cancel() error {

@@ -1,4 +1,4 @@
-package app
+package workflows
 
 import (
 	"fmt"
@@ -19,12 +19,9 @@ const (
 	OrderDecisionExpired   = "EXPIRED"
 )
 
-// WithDefaultLocalActivityOptions returns the default local activity
-func WithDefaultLocalActivityOptions(ctx workflow.Context) workflow.Context {
-	return workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
-		ScheduleToCloseTimeout: time.Hour * 2,
-		StartToCloseTimeout:    time.Second * 20,
-	})
+type ConfirmOrderRequest struct {
+	OrderID         string
+	PaymentOptionID string
 }
 
 // Order holds the request body for processing an order in the workflow
@@ -46,9 +43,9 @@ type OrderPrice struct {
 	CurrencyType domain.CurrencyType
 }
 
-// TemporalProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
+// ProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
 // other reasons.
-func TemporalProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err error) {
+func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err error) {
 	log := workflow.GetLogger(ctx)
 	defer func() {
 		if err != nil {
@@ -59,7 +56,7 @@ func TemporalProcessOrderWorkflow(ctx workflow.Context, order Order) (state stri
 	log.Info("create new order", order)
 
 	var (
-		processOrderActivity TemporalProcessOrderActivity
+		processOrderActivity ProcessOrderActivities
 	)
 
 	err = workflow.ExecuteLocalActivity(
@@ -105,41 +102,14 @@ func TemporalProcessOrderWorkflow(ctx workflow.Context, order Order) (state stri
 	}()
 
 	log.Info("deliver the order")
-	err = deliverOrder(ctx, order.OrderID, order.Asset)
+	err = deliverOrder(ctx, order)
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed to deliver order: %s", err)
 	}
 
+	log.Info("order succeeded")
+
 	return ProcessOrderStateSucceeded, nil
-}
-
-func deliverOrder(ctx workflow.Context, orderID string, asset OrderAsset) error {
-	switch asset.Type {
-	case domain.AssetTypeDapperCredit:
-
-	case domain.AssetTypeNFT:
-	}
-
-	return nil
-}
-
-func processPayment(ctx workflow.Context, orderID string) (string, error) {
-	var (
-		paymentChargeID      string
-		processOrderActivity TemporalProcessOrderActivity
-	)
-
-	// attempt to charge the order
-	err := workflow.ExecuteLocalActivity(
-		WithDefaultLocalActivityOptions(ctx),
-		processOrderActivity.ChargePayment,
-		orderID,
-	).Get(ctx, &paymentChargeID)
-	if err != nil {
-		return "", fmt.Errorf("failed to create order: %w", err)
-	}
-
-	return paymentChargeID, nil
 }
 
 func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) {
@@ -150,7 +120,7 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 	workflow.GetLogger(ctx).Info("waiting for order decision")
 
 	var (
-		processOrderActivity TemporalProcessOrderActivity
+		processOrderActivity ProcessOrderActivities
 		orderDecision        string
 		signalErr            error
 	)
@@ -222,4 +192,40 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 	}
 
 	return orderDecision, nil
+}
+
+func processPayment(ctx workflow.Context, orderID string) (string, error) {
+	var (
+		paymentChargeID      string
+		processOrderActivity ProcessOrderActivities
+	)
+
+	// attempt to charge the order
+	err := workflow.ExecuteLocalActivity(
+		WithDefaultLocalActivityOptions(ctx),
+		processOrderActivity.ChargePayment,
+		orderID,
+	).Get(ctx, &paymentChargeID)
+	if err != nil {
+		return "", fmt.Errorf("failed to create order: %w", err)
+	}
+
+	return paymentChargeID, nil
+}
+
+func deliverOrder(ctx workflow.Context, order Order) error {
+	var (
+		processOrderActivity ProcessOrderActivities
+	)
+
+	err := workflow.ExecuteLocalActivity(
+		WithDefaultLocalActivityOptions(ctx),
+		processOrderActivity.DeliverOrder,
+		order.OrderID,
+	).Get(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
