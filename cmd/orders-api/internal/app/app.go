@@ -10,6 +10,7 @@ import (
 	"order-sample/cmd/orders-api/internal/app/workflows"
 )
 
+// Application provides all Application capabilities
 type Application struct {
 	Order OrderHandler
 }

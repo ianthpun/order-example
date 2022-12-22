@@ -5,16 +5,34 @@ import (
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
-// ProcessOrderActivities is an activity that is used by our Temporal Workflow. Do not use this struct for other
-// reasons.
+// PaymentService are all the capabilities of the payment service
+type PaymentService interface {
+	GetPaymentMethods(
+		ctx context.Context,
+		userID string,
+		types []domain.PaymentMethodType,
+	) ([]domain.PaymentInstrument, error)
+	ChargePayment(
+		ctx context.Context,
+		orderID string,
+		userID string,
+		paymentOption domain.PaymentOption,
+	) (string, error)
+}
+
+// AssetService are all the capabilities of the asset service
+type AssetService interface {
+	Deliver(ctx context.Context, order domain.Order) error
+}
+
+// ProcessOrderActivities is an activity that is used by our workflow.
 type ProcessOrderActivities struct {
 	PaymentService  PaymentService
 	AssetService    AssetService
 	OrderRepository domain.OrderRepository
 }
 
-// NewProcessOrderActivities returns a temporal Activity used for Temporal workflows. Do not use this function for
-// other reasons.
+// NewProcessOrderActivities returns an activities object used by our workflow
 func NewProcessOrderActivities(
 	paymentService PaymentService,
 	assetService AssetService,
@@ -124,7 +142,7 @@ func (a *ProcessOrderActivities) CreateOrder(
 }
 
 func toOrderDomain(o Order) (*domain.Order, error) {
-	asset, err := domain.NewNFTAsset(o.Asset.ID, o.Asset.Name)
+	asset, err := domain.NewDapperCreditAsset(domain.NewMoney(o.Price.Amount, o.Price.CurrencyType))
 	if err != nil {
 		return nil, err
 	}

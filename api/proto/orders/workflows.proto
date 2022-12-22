@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package workflows;
+
+import "google/protobuf/timestamp.proto";
+
+message OrderRequest {
+}
+
+message ConfirmOrderSignal {
+}

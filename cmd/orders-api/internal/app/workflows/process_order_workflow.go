@@ -19,11 +19,6 @@ const (
 	OrderDecisionExpired   = "EXPIRED"
 )
 
-type ConfirmOrderRequest struct {
-	OrderID         string
-	PaymentOptionID string
-}
-
 // Order holds the request body for processing an order in the workflow
 type Order struct {
 	OrderID string
@@ -32,12 +27,14 @@ type Order struct {
 	Price   OrderPrice
 }
 
+// OrderAsset holds the asset of an order
 type OrderAsset struct {
 	ID   string
 	Type domain.AssetType
 	Name string
 }
 
+// OrderPrice holds the price of an order
 type OrderPrice struct {
 	Amount       string
 	CurrencyType domain.CurrencyType
@@ -112,12 +109,10 @@ func ProcessOrderWorkflow(ctx workflow.Context, order Order) (state string, err 
 	return ProcessOrderStateSucceeded, nil
 }
 
+// wait for confirm/cancel signal
 func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) {
-	// wait for confirm/cancel/expiry signal
 	confirmOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CONFIRM_ORDER_CHANNEL)
 	cancelOrderChannel := workflow.GetSignalChannel(ctx, SignalChannels.CANCEL_ORDER_CHANNEL)
-
-	workflow.GetLogger(ctx).Info("waiting for order decision")
 
 	var (
 		processOrderActivity ProcessOrderActivities
@@ -128,8 +123,7 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 		selector := workflow.NewSelector(ctx)
 
 		selector.AddReceive(confirmOrderChannel, func(c workflow.ReceiveChannel, _ bool) {
-			workflow.GetLogger(ctx).Info("confirmed")
-			var event ConfirmOrderRequest
+			var event ConfirmOrderSignal
 			c.Receive(ctx, &event)
 
 			err := workflow.ExecuteLocalActivity(
@@ -149,7 +143,6 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 		})
 
 		selector.AddReceive(cancelOrderChannel, func(c workflow.ReceiveChannel, _ bool) {
-			workflow.GetLogger(ctx).Info("cancel")
 			err := workflow.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				processOrderActivity.CancelOrder,
@@ -165,9 +158,8 @@ func waitForOrderDecision(ctx workflow.Context, orderID string) (string, error) 
 
 			return
 		})
-
+		// if no signal comes back before the order expiry time, expire the order
 		selector.AddFuture(workflow.NewTimer(ctx, orderExpiryTime), func(f workflow.Future) {
-			workflow.GetLogger(ctx).Info("expire")
 			err := workflow.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				processOrderActivity.ExpireOrder,

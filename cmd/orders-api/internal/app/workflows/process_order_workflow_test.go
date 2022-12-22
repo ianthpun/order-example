@@ -42,7 +42,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
 			workflows.SignalChannels.CONFIRM_ORDER_CHANNEL,
-			workflows.ConfirmOrderRequest{
+			workflows.ConfirmOrderSignal{
 				OrderID:         request.OrderID,
 				PaymentOptionID: uuid.NewString(),
 			},
@@ -88,6 +88,8 @@ func (s *UnitTestSuite) Test_ProcessOrder_Expired() {
 			return nil
 		})
 
+	// let the timer run until expiry happens
+
 	s.env.OnActivity(activity.ExpireOrder, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, orderID string) error {
 			return nil
@@ -104,6 +106,45 @@ func (s *UnitTestSuite) Test_ProcessOrder_Expired() {
 	var result string
 	s.env.GetWorkflowResult(&result)
 	s.Equal(workflows.OrderDecisionExpired, result)
+}
+
+func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
+	request := testOrderRequest()
+
+	var activity workflows.ProcessOrderActivities
+
+	s.env.OnActivity(activity.CreateOrder, mock.Anything, mock.Anything).Return(
+		func(ctx context.Context, order workflows.Order) error {
+			return nil
+		})
+
+	s.env.RegisterDelayedCallback(func() {
+		s.env.SignalWorkflow(
+			workflows.SignalChannels.CANCEL_ORDER_CHANNEL,
+			workflows.ConfirmOrderSignal{
+				OrderID:         request.OrderID,
+				PaymentOptionID: uuid.NewString(),
+			},
+		)
+
+	}, time.Millisecond)
+
+	s.env.OnActivity(activity.CancelOrder, mock.Anything, mock.Anything).Return(
+		func(ctx context.Context, orderID string) error {
+			return nil
+		})
+
+	s.env.ExecuteWorkflow(
+		workflows.ProcessOrderWorkflow,
+		request,
+	)
+
+	s.True(s.env.IsWorkflowCompleted())
+	s.NoError(s.env.GetWorkflowError())
+
+	var result string
+	s.env.GetWorkflowResult(&result)
+	s.Equal(workflows.OrderDecisionCancelled, result)
 }
 
 func TestUnitTestSuite(t *testing.T) {

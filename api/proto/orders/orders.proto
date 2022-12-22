@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package orders;
+
+import "google/protobuf/timestamp.proto";
+
+service OrderService {
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {}
+}
+
+message CreateOrderRequest {
+}
+
+message CreateOrderResponse {
+}
