@@ -1,9 +1,10 @@
-package workflows
+package temporal
 
 import (
 	"fmt"
 	workflowsdk "go.temporal.io/sdk/workflow"
 	"go.uber.org/multierr"
+	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
 	"order-sample/internal/protobuf/orders"
 	"time"
@@ -54,12 +55,12 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 	log.Info("create new order", req)
 
 	var (
-		processOrderActivity ProcessOrderActivities
+		app app.Application
 	)
 
 	err = workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
-		processOrderActivity.CreateOrder,
+		app.CreateOrder,
 		req,
 	).Get(ctx, nil)
 	if err != nil {
@@ -91,7 +92,7 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 			refundErr := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
 				nil,
-				processOrderActivity.RefundPayment,
+				app.RefundPayment,
 				paymentChargeID,
 			).Get(ctx, nil)
 
@@ -116,9 +117,9 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String())
 
 	var (
-		processOrderActivity ProcessOrderActivities
-		orderDecision        string
-		signalErr            error
+		app           app.Application
+		orderDecision string
+		signalErr     error
 	)
 	{
 		selector := workflowsdk.NewSelector(ctx)
@@ -129,7 +130,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 
 			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
-				processOrderActivity.ConfirmOrder,
+				app.ConfirmOrder,
 				orderID,
 				event.GetPaymentOptionId(),
 			).Get(ctx, nil)
@@ -146,7 +147,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 		selector.AddReceive(cancelOrderChannel, func(c workflowsdk.ReceiveChannel, _ bool) {
 			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
-				processOrderActivity.CancelOrder,
+				app.CancelOrder,
 				orderID,
 			).Get(ctx, nil)
 			if err != nil {
@@ -163,7 +164,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 		selector.AddFuture(workflowsdk.NewTimer(ctx, orderExpiryTime), func(f workflowsdk.Future) {
 			err := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
-				processOrderActivity.ExpireOrder,
+				app.ExpireOrder,
 				orderID,
 			).Get(ctx, nil)
 			if err != nil {
@@ -189,14 +190,14 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 
 func processPayment(ctx workflowsdk.Context, orderID string) (string, error) {
 	var (
-		paymentChargeID      string
-		processOrderActivity ProcessOrderActivities
+		paymentChargeID string
+		app             app.Application
 	)
 
 	// attempt to charge the order
 	err := workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
-		processOrderActivity.ChargePayment,
+		app.ChargePayment,
 		orderID,
 	).Get(ctx, &paymentChargeID)
 	if err != nil {
@@ -208,12 +209,12 @@ func processPayment(ctx workflowsdk.Context, orderID string) (string, error) {
 
 func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	var (
-		processOrderActivity ProcessOrderActivities
+		app app.Application
 	)
 
 	err := workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
-		processOrderActivity.DeliverOrder,
+		app.DeliverOrder,
 		orderID,
 	).Get(ctx, nil)
 	if err != nil {

@@ -2,10 +2,10 @@ package order
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/app"
+	"order-sample/cmd/orders-api/internal/app_old"
 )
 
-type CancelOrderHandler app.CommandHandler[string]
+type CancelOrderHandler app_old.CommandHandler[string]
 
 type cancelOrderUseCase struct {
 	orderWorkflow OrderWorkflow

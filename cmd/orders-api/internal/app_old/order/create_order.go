@@ -3,11 +3,11 @@ package order
 import (
 	"context"
 	"fmt"
-	"order-sample/cmd/orders-api/internal/app"
+	"order-sample/cmd/orders-api/internal/app_old"
 	"order-sample/cmd/orders-api/internal/domain"
 )
 
-type CreateOrderHandler app.QueryHandler[CreateOrderRequest, domain.Order]
+type CreateOrderHandler app_old.QueryHandler[CreateOrderRequest, domain.Order]
 
 type createOrderUseCase struct {
 	assetService  AssetService

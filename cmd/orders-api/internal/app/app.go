@@ -2,64 +2,153 @@ package app
 
 import (
 	"context"
-	temporalsdk "go.temporal.io/sdk/client"
-	"order-sample/cmd/orders-api/internal/adapters/repository/spanner"
-	"order-sample/cmd/orders-api/internal/adapters/services/grpc"
-	"order-sample/cmd/orders-api/internal/adapters/services/temporal"
-	"order-sample/cmd/orders-api/internal/app/order"
-	"order-sample/cmd/orders-api/internal/app/workflows"
+	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/internal/protobuf/orders"
 )
 
-// Application provides all Application capabilities
+// PaymentService are all the capabilities of the payment service
+type PaymentService interface {
+	GetPaymentMethods(
+		ctx context.Context,
+		userID string,
+		types []domain.PaymentMethodType,
+	) ([]domain.PaymentInstrument, error)
+	ChargePayment(
+		ctx context.Context,
+		orderID string,
+		userID string,
+		paymentOption domain.PaymentOption,
+	) (string, error)
+}
+
+// AssetService are all the capabilities of the asset service
+type AssetService interface {
+	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
+	Deliver(ctx context.Context, order domain.Order) error
+}
+
 type Application struct {
-	Order OrderHandler
+	PaymentService  PaymentService
+	AssetService    AssetService
+	OrderRepository domain.OrderRepository
 }
 
-// OrderHandler provides all OrderHandler capabilities
-type OrderHandler struct {
-	CreateOrder  order.CreateOrderHandler
-	ConfirmOrder order.ConfirmOrderHandler
-	CancelOrder  order.CancelOrderHandler
-}
-
-// CommandHandler
-// These allow for all usecases under application to be private structs and without the need of multiple interfaces
-type CommandHandler[C any] interface {
-	Handle(ctx context.Context, cmd C) error
-}
-
-type QueryHandler[Q any, R any] interface {
-	Handle(ctx context.Context, q Q) (*R, error)
-}
-
-func New(ctx context.Context, temporalClient temporalsdk.Client) Application {
-	paymentService := grpc.NewPaymentService()
-	assetService := grpc.NewAssetService()
-	orderRepository := spanner.NewOrderRepository()
-	workflowService := temporal.NewWorkflowService(
-		temporalClient,
-		temporal.ProcessOrderConfig{
-			Activities: workflows.NewProcessOrderActivities(
-				paymentService,
-				assetService,
-				orderRepository,
-			),
-			WorkflowFunc: workflows.ProcessOrderWorkflow,
-		},
-	)
-
-	return Application{
-		Order: OrderHandler{
-			CreateOrder: order.NewCreateOrderHandler(
-				assetService,
-				workflowService,
-			),
-			ConfirmOrder: order.NewConfirmOrderHandler(
-				workflowService,
-			),
-			CancelOrder: order.NewCancelOrderHandler(
-				workflowService,
-			),
-		},
+// New returns a new Application
+func New(
+	paymentService PaymentService,
+	assetService AssetService,
+	orderRepository domain.OrderRepository,
+) *Application {
+	return &Application{
+		PaymentService:  paymentService,
+		AssetService:    assetService,
+		OrderRepository: orderRepository,
 	}
+}
+
+func (a *Application) ChargePayment(
+	ctx context.Context,
+	orderID string,
+) (string, error) {
+	order, err := a.OrderRepository.GetOrder(ctx, orderID)
+	if err != nil {
+		return "", err
+	}
+
+	paymentChargeID, err := a.PaymentService.ChargePayment(
+		ctx,
+		order.GetID(),
+		order.GetUserID(),
+		order.GetSelectedPaymentOption(),
+	)
+	if err != nil {
+		return "", err
+	}
+
+	return paymentChargeID, nil
+}
+
+func (a *Application) CancelOrder(ctx context.Context, orderID string) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.Cancel(); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
+}
+
+func (a *Application) DeliverOrder(ctx context.Context, orderID string) error {
+	order, err := a.OrderRepository.GetOrder(ctx, orderID)
+	if err != nil {
+		return err
+	}
+
+	return a.AssetService.Deliver(ctx, order)
+}
+
+func (a *Application) ConfirmOrder(
+	ctx context.Context,
+	orderID string,
+	paymentOptionID string,
+) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.ConfirmPaymentOption(paymentOptionID); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
+}
+
+func (a *Application) ExpireOrder(
+	ctx context.Context,
+	orderID string,
+) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.Expire(); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
+}
+
+func (a *Application) RefundPayment(
+	ctx context.Context,
+	paymentChargeID string,
+) error {
+	return nil
+}
+
+func (a *Application) CreateOrder(
+	ctx context.Context,
+	order domain.Order,
+) error {
+	return a.OrderRepository.InsertNewOrder(ctx, order)
+}
+
+func toOrderDomain(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
+	asset, err := domain.NewDapperCreditAsset(
+		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain.NewOrder(
+		req.GetOrderId(),
+		req.GetUserId(),
+		*asset,
+		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
+	)
 }

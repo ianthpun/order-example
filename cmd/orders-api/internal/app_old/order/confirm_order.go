@@ -2,10 +2,10 @@ package order
 
 import (
 	"context"
-	"order-sample/cmd/orders-api/internal/app"
+	"order-sample/cmd/orders-api/internal/app_old"
 )
 
-type ConfirmOrderHandler app.CommandHandler[ConfirmOrderRequest]
+type ConfirmOrderHandler app_old.CommandHandler[ConfirmOrderRequest]
 
 type confirmOrderUseCase struct {
 	workflowService OrderWorkflow

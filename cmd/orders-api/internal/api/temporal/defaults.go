@@ -1,4 +1,4 @@
-package workflows
+package temporal
 
 import (
 	"go.temporal.io/sdk/workflow"
