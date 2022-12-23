@@ -5,7 +5,7 @@ import (
 	workflowsdk "go.temporal.io/sdk/workflow"
 	"go.uber.org/multierr"
 	"order-sample/cmd/orders-api/internal/domain"
-	"order-sample/internal/protobuf/orders"
+	"order-sample/internal/protobuf/temporal"
 	"time"
 )
 
@@ -22,7 +22,7 @@ const (
 
 // ProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
 // other reasons.
-func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequest) (state string, err error) {
+func ProcessOrderWorkflow(ctx workflowsdk.Context, req *temporal.WorkflowOrderRequest) (state string, err error) {
 	log := workflowsdk.GetLogger(ctx)
 	defer func() {
 		if err != nil {
@@ -97,8 +97,8 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 
 // wait for confirm/cancel signal
 func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, error) {
-	confirmOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String())
-	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String())
+	confirmOrderChannel := workflowsdk.GetSignalChannel(ctx, temporal.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String())
+	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, temporal.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String())
 
 	var (
 		app           Activities
@@ -109,7 +109,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 		selector := workflowsdk.NewSelector(ctx)
 
 		selector.AddReceive(confirmOrderChannel, func(c workflowsdk.ReceiveChannel, _ bool) {
-			var event orders.WorkflowConfirmOrderSignal
+			var event temporal.WorkflowConfirmOrderSignal
 			c.Receive(ctx, &event)
 
 			err := workflowsdk.ExecuteLocalActivity(
@@ -208,7 +208,7 @@ func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	return nil
 }
 
-func newOrder(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
+func newOrder(req *temporal.WorkflowOrderRequest) (*domain.Order, error) {
 	asset, err := domain.NewDapperCreditAsset(
 		domain.NewMoney(req.GetPrice().GetAmount(), domain.CurrencyTypeUSD),
 	)

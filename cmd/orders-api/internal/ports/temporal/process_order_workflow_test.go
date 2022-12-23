@@ -7,6 +7,7 @@ import (
 	"order-sample/cmd/orders-api/internal/domain"
 	"order-sample/internal/protobuf/common"
 	"order-sample/internal/protobuf/orders"
+	"order-sample/internal/protobuf/temporal"
 	"testing"
 	"time"
 
@@ -42,8 +43,8 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
-			orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
-			orders.WorkflowConfirmOrderSignal{
+			temporal.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
+			temporal.WorkflowConfirmOrderSignal{
 				OrderId:         request.GetOrderId(),
 				PaymentOptionId: uuid.NewString(),
 			},
@@ -121,8 +122,8 @@ func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
 
 	s.env.RegisterDelayedCallback(func() {
 		s.env.SignalWorkflow(
-			orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String(),
-			orders.WorkflowCancelOrderSignal{
+			temporal.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String(),
+			temporal.WorkflowCancelOrderSignal{
 				OrderId: request.GetOrderId(),
 			},
 		)
@@ -151,7 +152,7 @@ func TestUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(UnitTestSuite))
 }
 
-func testOrderRequest() *orders.WorkflowOrderRequest {
+func testOrderRequest() *temporal.WorkflowOrderRequest {
 	asset, err := domain.NewNFTAsset(uuid.NewString(), "cool doodle")
 	if err != nil {
 		panic(err)
@@ -166,7 +167,7 @@ func testOrderRequest() *orders.WorkflowOrderRequest {
 		panic(err)
 	}
 
-	return &orders.WorkflowOrderRequest{
+	return &temporal.WorkflowOrderRequest{
 		OrderId: order.GetID(),
 		UserId:  order.GetUserID(),
 		Asset: &orders.Asset{
