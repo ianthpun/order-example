@@ -6,10 +6,9 @@ import (
 )
 
 type Application struct {
-	PaymentService   PaymentService
-	AssetService     AssetService
-	OrderRepository  domain.OrderRepository
-	WorkflowExecutor WorkflowExecutor
+	PaymentService  PaymentService
+	AssetService    AssetService
+	OrderRepository domain.OrderRepository
 }
 
 // New returns a new Application
@@ -17,13 +16,11 @@ func New(
 	paymentService PaymentService,
 	assetService AssetService,
 	orderRepository domain.OrderRepository,
-	workflowExecutor WorkflowExecutor,
 ) *Application {
 	return &Application{
-		PaymentService:   paymentService,
-		AssetService:     assetService,
-		OrderRepository:  orderRepository,
-		WorkflowExecutor: workflowExecutor,
+		PaymentService:  paymentService,
+		AssetService:    assetService,
+		OrderRepository: orderRepository,
 	}
 }
 

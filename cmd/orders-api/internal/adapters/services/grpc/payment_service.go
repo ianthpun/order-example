@@ -7,11 +7,6 @@ import (
 
 type paymentService struct{}
 
-func (ps *paymentService) ChargePayment(ctx context.Context, orderID string, userID string, paymentOption domain.PaymentOption) (string, error) {
-	//TODO implement me
-	panic("implement me")
-}
-
 func NewPaymentService() *paymentService {
 	return &paymentService{}
 }
@@ -21,5 +16,11 @@ func (ps *paymentService) GetPaymentMethods(
 	userID string,
 	types []domain.PaymentMethodType,
 ) ([]domain.PaymentInstrument, error) {
-	return []domain.PaymentInstrument{}, nil
+	//TODO implement me
+	panic("implement me")
+}
+
+func (ps *paymentService) ChargePayment(ctx context.Context, orderID string, userID string, paymentOption domain.PaymentOption) (string, error) {
+	//TODO implement me
+	panic("implement me")
 }
