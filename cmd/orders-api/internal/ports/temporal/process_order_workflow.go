@@ -31,10 +31,10 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 	}()
 
 	log.Info("create new order", req)
-	createOrder, err := toOrderDomain(req)
+	createOrder, err := newOrder(req)
 	if err != nil {
 		if err != nil {
-			return ProcessOrderStateFailed, fmt.Errorf("failed to generate create order: %w", err)
+			return ProcessOrderStateFailed, fmt.Errorf("failed to generate new order: %w", err)
 		}
 	}
 
@@ -208,7 +208,7 @@ func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	return nil
 }
 
-func toOrderDomain(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
+func newOrder(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
 	asset, err := domain.NewDapperCreditAsset(
 		domain.NewMoney(req.GetPrice().GetAmount(), domain.CurrencyTypeUSD),
 	)
