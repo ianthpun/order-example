@@ -14,7 +14,7 @@ type PaymentService interface {
 	) ([]domain.PaymentInstrument, error)
 	ChargePayment(
 		ctx context.Context,
-		orderID string,
+		idempotencyKey string,
 		userID string,
 		paymentOption domain.PaymentOption,
 	) (string, error)
