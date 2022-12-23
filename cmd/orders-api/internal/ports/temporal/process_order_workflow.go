@@ -75,7 +75,6 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *temporal.WorkflowOrderRe
 		if err != nil {
 			refundErr := workflowsdk.ExecuteLocalActivity(
 				WithDefaultLocalActivityOptions(ctx),
-				nil,
 				app.RefundPayment,
 				paymentChargeID,
 			).Get(ctx, nil)
@@ -198,11 +197,45 @@ func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 
 	err := workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
-		app.DeliverOrder,
+		app.RequestDelivery,
 		orderID,
 	).Get(ctx, nil)
 	if err != nil {
 		return err
+	}
+
+	orderDeliveryChannel := workflowsdk.GetSignalChannel(
+		ctx,
+		temporal.WorkflowSignal_WORKFLOW_SIGNAL_ORDER_DELIVERY_COMPLETE.String(),
+	)
+
+	selector := workflowsdk.NewSelector(ctx)
+
+	var signalErr error
+
+	selector.AddReceive(orderDeliveryChannel, func(c workflowsdk.ReceiveChannel, _ bool) {
+		var event temporal.WorkflowOrderDeliveryCompleteSignal
+		c.Receive(ctx, &event)
+
+		if event.GetStatus() == temporal.WorkflowOrderDeliveryCompleteSignal_DELIVERY_STATUS_SUCCEEDED {
+			signalErr = workflowsdk.ExecuteLocalActivity(
+				WithDefaultLocalActivityOptions(ctx),
+				app.OrderDelivered,
+				orderID,
+			).Get(ctx, nil)
+		} else {
+			signalErr = workflowsdk.ExecuteLocalActivity(
+				WithDefaultLocalActivityOptions(ctx),
+				app.OrderDeliveryFailed,
+				orderID,
+				event.GetFailureReason(),
+			).Get(ctx, nil)
+		}
+
+		return
+	}).Select(ctx)
+	if signalErr != nil {
+		return signalErr
 	}
 
 	return nil

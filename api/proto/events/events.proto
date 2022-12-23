@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+message Header {
+  string event_name = 1;
+  string event_id = 2;
+  string request_id = 3;
+  string trace_id = 4;
+  string span_id = 5;
+  string reply_topic = 6;
+  string temporal_task_token = 7;
+}
+
+message CreditTransferRequested {
+  Header header = 1;
+  string sender_user_id = 2;
+  string recipient_user_id = 3;
+  uint64 amount = 4;
+  bool reserve_received_credits = 5;
+  bool release_spent_reservation = 6;
+  CreditTransferType type = 7;
+  string blockchain_address = 8;
+  string description = 9;
+  bool is_manual = 10;
+  bool is_visible_to_user = 11;
+  bool received_credits_non_redeemable = 12; // this will add non redeemable credit to the recipient
+  bool spend_non_redeemable_credit = 13; // this will deduct non redeemable credit from sender
+  string reversal_target_transfer_ref_id = 14; // this tells payments api how much nrc to add back by looking up the nrc deducted from original transfer
+  CreditTransferCategory transfer_category = 15;
+  bool optimistic_transfer_enabled = 16;
+  string temporal_task_token = 17;
+  string encrypted_pii = 18;
+  CreditTransferSubCategory transfer_sub_category = 19;
+}
+
+message CreditTransferComplete {
+  Header header = 1;
+  bool succeeded = 2;
+  string detail = 3;
+  string sender_user_id = 4;
+  string recipient_user_id = 5;
+  uint64 amount = 6;
+  google.protobuf.Timestamp processed_at = 7;
+  CreditTransferType type = 8;
+  string blockchain_tx_hash = 9;
+  bool is_manual = 10;
+  google.protobuf.Timestamp created_at = 11;
+  string description = 12;
+  bool is_visible_to_user = 13;
+  CreditTransferCategory transfer_category = 14;
+  string temporal_task_token = 15;
+}
+
+enum CreditTransferCategory {
+  CREDIT_TRANSFER_NONE = 0;
+  CREDIT_TRANSFER_GIFT_MARKETING = 1;
+  CREDIT_TRANSFER_FEE_REIMBURSEMENT = 2;
+  CREDIT_TRANSFER_RECLAIM = 3;
+  CREDIT_TRANSFER_PAYMENT_ISSUE = 4;
+  CREDIT_TRANSFER_REFILL = 5;
+  CREDIT_TRANSFER_P2P_ORCH = 6;
+  CREDIT_TRANSFER_PAY_ORCH = 7;
+  CREDIT_TRANSFER_ACCOUNT_CONSOLIDATION = 8;
+  CREDIT_TRANSFER_OFFBOARD_WITHDRAWAL = 9;
+  CREDIT_TRANSFER_OFFBOARD_WITHDRAWAL_INITIAL_FLOAT = 10;
+  CREDIT_TRANSFER_ORG_PAYOUT_METHOD_VERIFICATION = 11;
+  CREDIT_TRANSFER_ORG_PAYOUT = 12;
+  CREDIT_TRANSFER_AIRDROPS = 13;
+  CREDIT_TRANSFER_REIMBURSEMENT = 14;
+  CREDIT_TRANSFER_USER_TO_USER = 15;
+  CREDIT_TRANSFER_COMPENSATION = 16;
+  CREDIT_TRANSFER_ORDER_DELIVERY = 17;
+}
+
+enum CreditTransferSubCategory {
+  CREDIT_TRANSFER_SUB_CATEGORY_UNSPECIFIED = 0;
+  CREDIT_TRANSFER_SUB_CATEGORY_OFFBOARDING_FLOAT = 1;
+  CREDIT_TRANSFER_SUB_CATEGORY_PAYMENT_PROCESSING_ISSUE = 2;
+  CREDIT_TRANSFER_SUB_CATEGORY_USER_PROBLEM = 3;
+  CREDIT_TRANSFER_SUB_CATEGORY_REVERSE_OFFBOARDING = 4;
+  CREDIT_TRANSFER_SUB_CATEGORY_OFFBOARDING = 5;
+  CREDIT_TRANSFER_SUB_CATEGORY_ACCOUNT_CONSOLIDATION = 6;
+  CREDIT_TRANSFER_SUB_CATEGORY_FRAUD_PREVENTION = 7;
+  CREDIT_TRANSFER_SUB_CATEGORY_WD_DELAYED_WIRE_RETURN = 8;
+  CREDIT_TRANSFER_SUB_CATEGORY_ACCOUNT_CLOSURE = 9;
+  CREDIT_TRANSFER_SUB_CATEGORY_PROMOTION_CAMPAIGN = 10;
+  CREDIT_TRANSFER_SUB_CATEGORY_PRODUCT_ISSUE = 11;
+  CREDIT_TRANSFER_SUB_CATEGORY_OPERATIONS_ISSUE = 12;
+  CREDIT_TRANSFER_SUB_CATEGORY_WITHDRAWALS = 13;
+  CREDIT_TRANSFER_SUB_CATEGORY_FOREIGN_FEES = 14;
+  CREDIT_TRANSFER_SUB_CATEGORY_MISSING_FUNDS = 15;
+  CREDIT_TRANSFER_SUB_CATEGORY_PARTNERSHIP = 16;
+  CREDIT_TRANSFER_SUB_CATEGORY_PARTNER_INTEGRATION = 17;
+  CREDIT_TRANSFER_SUB_CATEGORY_REFILL = 18;
+  CREDIT_TRANSFER_SUB_CATEGORY_INTERNAL_TESTING = 19;
+  CREDIT_TRANSFER_SUB_CATEGORY_WITHDRAWAL = 20;
+  CREDIT_TRANSFER_SUB_CATEGORY_WITHDRAWAL_FEE = 21;
+  CREDIT_TRANSFER_SUB_CATEGORY_CREDIT_HOLD = 22;
+}
+
+
+enum CreditTransferType {
+  OFF_CHAIN = 0;
+  ON_CHAIN = 1;
+}

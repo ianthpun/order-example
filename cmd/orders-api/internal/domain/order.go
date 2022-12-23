@@ -14,16 +14,19 @@ type Order struct {
 	merchantID     string
 	price          Money
 	paymentOptions []PaymentOption
+	failureReason  string
 	createdAt      time.Time
 }
 
 type OrderState string
 
 const (
-	OrderStateCreated   OrderState = "CREATED"
-	OrderStateExpired   OrderState = "EXPIRED"
-	OrderStateCancelled OrderState = "CANCELLED"
-	OrderStateConfirmed OrderState = "CONFIRMED"
+	OrderStateCreated        OrderState = "CREATED"
+	OrderStateExpired        OrderState = "EXPIRED"
+	OrderStateDelivered      OrderState = "DELIVERED"
+	OrderStateDeliveryFailed OrderState = "DELIVERY_FAILED"
+	OrderStateCancelled      OrderState = "CANCELLED"
+	OrderStateConfirmed      OrderState = "CONFIRMED"
 )
 
 func (o OrderState) String() string {
@@ -135,6 +138,19 @@ func (o *Order) ConfirmPaymentOption(paymentOptionID string) error {
 
 func (o *Order) Expire() error {
 	o.state = OrderStateExpired
+
+	return nil
+}
+
+func (o *Order) Delivered() error {
+	o.state = OrderStateDelivered
+
+	return nil
+}
+
+func (o *Order) FailedDelivery(reason string) error {
+	o.state = OrderStateDelivered
+	o.failureReason = reason
 
 	return nil
 }

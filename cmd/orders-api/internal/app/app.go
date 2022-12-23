@@ -59,13 +59,13 @@ func (a *Application) CancelOrder(ctx context.Context, orderID string) error {
 		})
 }
 
-func (a *Application) DeliverOrder(ctx context.Context, orderID string) error {
+func (a *Application) RequestDelivery(ctx context.Context, orderID string) error {
 	order, err := a.OrderRepository.GetOrder(ctx, orderID)
 	if err != nil {
 		return err
 	}
 
-	return a.AssetService.Deliver(ctx, order)
+	return a.AssetService.RequestDelivery(ctx, order)
 }
 
 func (a *Application) ConfirmOrder(
@@ -113,4 +113,37 @@ func (a *Application) CreateOrder(
 	order domain.Order,
 ) error {
 	return a.OrderRepository.InsertNewOrder(ctx, order)
+}
+
+func (a *Application) OrderDelivered(
+	ctx context.Context,
+	orderID string,
+) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.Delivered(); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
+}
+
+func (a *Application) OrderDeliveryFailed(
+	ctx context.Context,
+	orderID string,
+	reason string,
+) error {
+	return a.OrderRepository.UpdateOrder(
+		ctx,
+		orderID,
+		func(ctx context.Context, order *domain.Order) (*domain.Order, error) {
+			if err := order.FailedDelivery(reason); err != nil {
+				return nil, err
+			}
+
+			return order, nil
+		})
 }

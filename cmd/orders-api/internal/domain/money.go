@@ -33,3 +33,7 @@ func (m Money) GetCurrencyType() CurrencyType {
 func (m Money) IsZero() bool {
 	return m.amount == "0" || m.amount == ""
 }
+
+func (m Money) BaseUnits() uint64 {
+	return 0
+}

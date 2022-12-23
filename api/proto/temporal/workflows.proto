@@ -17,6 +17,7 @@ enum WorkflowSignal {
   WORKFLOW_SIGNAL_UNSPECIFIED = 0;
   WORKFLOW_SIGNAL_CANCEL_ORDER = 1;
   WORKFLOW_SIGNAL_CONFIRM_ORDER = 2;
+  WORKFLOW_SIGNAL_ORDER_DELIVERY_COMPLETE = 3;
 }
 
 message WorkflowConfirmOrderSignal {
@@ -26,4 +27,15 @@ message WorkflowConfirmOrderSignal {
 
 message WorkflowCancelOrderSignal {
   string order_id = 1;
+}
+
+message WorkflowOrderDeliveryCompleteSignal {
+  string order_id = 1;
+  DeliveryStatus status = 2;
+  enum DeliveryStatus {
+      DELIVERY_STATUS_UNSPECIFIED = 0;
+      DELIVERY_STATUS_SUCCEEDED = 1;
+      DELIVERY_STATUS_FAILED = 2;
+}
+  string failure_reason = 3;
 }

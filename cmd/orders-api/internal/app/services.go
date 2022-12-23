@@ -27,5 +27,5 @@ type PaymentService interface {
 // AssetService are all the capabilities of the asset service
 type AssetService interface {
 	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
-	Deliver(ctx context.Context, order domain.Order) error
+	RequestDelivery(ctx context.Context, order domain.Order) error
 }

@@ -1,13 +1,12 @@
 package temporal
 
 import (
-	"fmt"
 	temporalsdk "go.temporal.io/sdk/client"
 	"go.temporal.io/sdk/worker"
 )
 
 type workflowService struct {
-	client temporalsdk.Client
+	worker worker.Worker
 }
 
 type ProcessOrderConfig struct {
@@ -25,11 +24,9 @@ func NewWorkflowService(
 	w.RegisterActivity(processOrder.Activities)
 	w.RegisterWorkflow(processOrder.WorkflowFunc)
 
-	go func() {
-		if err := w.Run(nil); err != nil {
-			fmt.Errorf("worker failed: %s", err)
-		}
-	}()
+	return &workflowService{worker: w}
+}
 
-	return &workflowService{client: client}
+func (w *workflowService) Run() error {
+	return w.worker.Run(nil)
 }

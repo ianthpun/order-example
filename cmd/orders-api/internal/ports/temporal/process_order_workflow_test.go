@@ -62,7 +62,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 			return uuid.NewString(), nil
 		})
 
-	s.env.OnActivity(app.DeliverOrder, mock.Anything, mock.Anything).Return(
+	s.env.OnActivity(app.RequestDelivery, mock.Anything, mock.Anything).Return(
 		func(ctx context.Context, orderID string) error {
 			return nil
 		})
