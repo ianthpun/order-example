@@ -1,6 +1,11 @@
 syntax = "proto3";
 
-package currency;
+package money;
+
+message Money {
+ string Amount = 1;
+ CurrencyType currency_type = 2;
+}
 
 enum CurrencyType {
  CURRENCY_TYPE_UNSPECIFIED = 0;

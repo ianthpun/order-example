@@ -4,12 +4,13 @@ package workflows;
 
 import "google/protobuf/timestamp.proto";
 import "orders/orders.proto";
+import "common/money.proto";
 
 message WorkflowOrderRequest {
     string order_id = 1;
     string user_id = 2;
     orders.Asset asset = 3;
-    orders.Price price = 4;
+    money.Money price = 4;
 }
 
 enum WorkflowSignal {

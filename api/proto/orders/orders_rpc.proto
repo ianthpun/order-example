@@ -4,6 +4,7 @@ package orders;
 
 import "google/protobuf/timestamp.proto";
 import "orders/orders.proto";
+import "common/money.proto";
 
 service OrderService {
   rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {}
@@ -15,7 +16,7 @@ message CreateOrderRequest {
   string idempotency_key = 1;
   string user_id = 2;
   Asset asset = 3;
-  Price price = 4;
+  money.Money price = 4;
 }
 
 message CreateOrderResponse {

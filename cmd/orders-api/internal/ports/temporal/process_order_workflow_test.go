@@ -175,7 +175,7 @@ func testOrderRequest() *temporal.WorkflowOrderRequest {
 			AssetType: orders.AssetType_ASSET_TYPE_DAPPER_CREDIT,
 			Name:      order.GetAsset().GetName(),
 		},
-		Price: &orders.Price{
+		Price: &common.Money{
 			Amount:       order.GetPrice().GetAmount(),
 			CurrencyType: common.CurrencyType_CURRENCY_TYPE_USD,
 		},
