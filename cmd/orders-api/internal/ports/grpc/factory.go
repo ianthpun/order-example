@@ -8,9 +8,9 @@ import (
 
 // WorkflowExecutor are all the capabilities of a workflow executor
 type WorkflowExecutor interface {
-	StartOrder(ctx context.Context, order domain.Order)
-	CancelOrder(ctx context.Context, orderID string)
-	ConfirmOrder(ctx context.Context, orderID string, paymentOptionID string)
+	StartOrder(ctx context.Context, order domain.Order) error
+	CancelOrder(ctx context.Context, orderID string) error
+	ConfirmOrder(ctx context.Context, orderID string, paymentOptionID string) error
 }
 
 type OrderService struct {

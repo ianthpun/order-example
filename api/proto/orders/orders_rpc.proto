@@ -3,14 +3,35 @@ syntax = "proto3";
 package orders;
 
 import "google/protobuf/timestamp.proto";
-
+import "orders/orders.proto";
 
 service OrderService {
   rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {}
+  rpc ConfirmOrder(ConfirmOrderRequest) returns (ConfirmOrderResponse) {}
+  rpc CancelOrder(CancelOrderRequest) returns (CancelOrderResponse) {}
 }
 
 message CreateOrderRequest {
+  string idempotency_key = 1;
+  string user_id = 2;
+  Asset asset = 3;
+  Price price = 4;
 }
 
 message CreateOrderResponse {
+}
+
+message ConfirmOrderRequest {
+  string order_id = 1;
+  string payment_option_id = 2;
+}
+
+message ConfirmOrderResponse {
+}
+
+message CancelOrderRequest {
+  string order_id = 1;
+}
+
+message CancelOrderResponse {
 }
