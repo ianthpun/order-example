@@ -4,7 +4,6 @@ import (
 	"fmt"
 	workflowsdk "go.temporal.io/sdk/workflow"
 	"go.uber.org/multierr"
-	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
 	"order-sample/internal/protobuf/orders"
 	"time"
@@ -21,27 +20,6 @@ const (
 	OrderDecisionExpired   = "EXPIRED"
 )
 
-// Order holds the request body for processing an order in the workflow
-type Order struct {
-	OrderID string
-	UserID  string
-	Asset   OrderAsset
-	Price   OrderPrice
-}
-
-// OrderAsset holds the asset of an order
-type OrderAsset struct {
-	ID   string
-	Type domain.AssetType
-	Name string
-}
-
-// OrderPrice holds the price of an order
-type OrderPrice struct {
-	Amount       string
-	CurrencyType domain.CurrencyType
-}
-
 // ProcessOrderWorkflow is a function specifically used for Temporal workflows. Do not use this function for
 // other reasons.
 func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequest) (state string, err error) {
@@ -53,15 +31,21 @@ func ProcessOrderWorkflow(ctx workflowsdk.Context, req *orders.WorkflowOrderRequ
 	}()
 
 	log.Info("create new order", req)
+	createOrder, err := toOrderDomain(req)
+	if err != nil {
+		if err != nil {
+			return ProcessOrderStateFailed, fmt.Errorf("failed to generate create order: %w", err)
+		}
+	}
 
 	var (
-		app app.Application
+		app Activities
 	)
 
 	err = workflowsdk.ExecuteLocalActivity(
 		WithDefaultLocalActivityOptions(ctx),
 		app.CreateOrder,
-		req,
+		*createOrder,
 	).Get(ctx, nil)
 	if err != nil {
 		return ProcessOrderStateFailed, fmt.Errorf("failed to create order: %w", err)
@@ -117,7 +101,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 	cancelOrderChannel := workflowsdk.GetSignalChannel(ctx, orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String())
 
 	var (
-		app           app.Application
+		app           Activities
 		orderDecision string
 		signalErr     error
 	)
@@ -191,7 +175,7 @@ func waitForOrderDecision(ctx workflowsdk.Context, orderID string) (string, erro
 func processPayment(ctx workflowsdk.Context, orderID string) (string, error) {
 	var (
 		paymentChargeID string
-		app             app.Application
+		app             Activities
 	)
 
 	// attempt to charge the order
@@ -209,7 +193,7 @@ func processPayment(ctx workflowsdk.Context, orderID string) (string, error) {
 
 func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	var (
-		app app.Application
+		app Activities
 	)
 
 	err := workflowsdk.ExecuteLocalActivity(
@@ -222,4 +206,20 @@ func deliverOrder(ctx workflowsdk.Context, orderID string) error {
 	}
 
 	return nil
+}
+
+func toOrderDomain(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
+	asset, err := domain.NewDapperCreditAsset(
+		domain.NewMoney(req.GetPrice().GetAmount(), domain.CurrencyTypeUSD),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return domain.NewOrder(
+		req.GetOrderId(),
+		req.GetUserId(),
+		*asset,
+		domain.NewMoney(req.GetPrice().GetAmount(), domain.CurrencyTypeUSD),
+	)
 }

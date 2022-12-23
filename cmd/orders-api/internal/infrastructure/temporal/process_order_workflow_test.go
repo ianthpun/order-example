@@ -4,8 +4,8 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
-	"order-sample/cmd/orders-api/internal/app"
 	"order-sample/cmd/orders-api/internal/domain"
+	"order-sample/internal/protobuf/common"
 	"order-sample/internal/protobuf/orders"
 	"testing"
 	"time"
@@ -33,10 +33,10 @@ func (s *UnitTestSuite) AfterTest(suiteName, testName string) {
 func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 	request := testOrderRequest()
 
-	var app app.Application
+	var app Activities
 
 	s.env.OnActivity(app.CreateOrder, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, order Order) error {
+		func(ctx context.Context, order domain.Order) error {
 			return nil
 		})
 
@@ -44,7 +44,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 		s.env.SignalWorkflow(
 			orders.WorkflowSignal_WORKFLOW_SIGNAL_CONFIRM_ORDER.String(),
 			orders.WorkflowConfirmOrderSignal{
-				OrderId:         request.OrderID,
+				OrderId:         request.GetOrderId(),
 				PaymentOptionId: uuid.NewString(),
 			},
 		)
@@ -82,10 +82,10 @@ func (s *UnitTestSuite) Test_ProcessOrder_Success() {
 func (s *UnitTestSuite) Test_ProcessOrder_Expired() {
 	request := testOrderRequest()
 
-	var app app.Application
+	var app Activities
 
 	s.env.OnActivity(app.CreateOrder, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, order Order) error {
+		func(ctx context.Context, order domain.Order) error {
 			return nil
 		})
 
@@ -112,10 +112,10 @@ func (s *UnitTestSuite) Test_ProcessOrder_Expired() {
 func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
 	request := testOrderRequest()
 
-	var app app.Application
+	var app Activities
 
 	s.env.OnActivity(app.CreateOrder, mock.Anything, mock.Anything).Return(
-		func(ctx context.Context, order Order) error {
+		func(ctx context.Context, order domain.Order) error {
 			return nil
 		})
 
@@ -123,7 +123,7 @@ func (s *UnitTestSuite) Test_ProcessOrder_Cancelled() {
 		s.env.SignalWorkflow(
 			orders.WorkflowSignal_WORKFLOW_SIGNAL_CANCEL_ORDER.String(),
 			orders.WorkflowCancelOrderSignal{
-				OrderId: request.OrderID,
+				OrderId: request.GetOrderId(),
 			},
 		)
 
@@ -151,7 +151,7 @@ func TestUnitTestSuite(t *testing.T) {
 	suite.Run(t, new(UnitTestSuite))
 }
 
-func testOrderRequest() Order {
+func testOrderRequest() *orders.WorkflowOrderRequest {
 	asset, err := domain.NewNFTAsset(uuid.NewString(), "cool doodle")
 	if err != nil {
 		panic(err)
@@ -166,17 +166,17 @@ func testOrderRequest() Order {
 		panic(err)
 	}
 
-	return Order{
-		OrderID: order.GetID(),
-		UserID:  order.GetUserID(),
-		Asset: OrderAsset{
-			ID:   order.GetAsset().GetID(),
-			Type: order.GetAsset().GetAssetType(),
-			Name: order.GetAsset().GetName(),
+	return &orders.WorkflowOrderRequest{
+		OrderId: order.GetID(),
+		UserId:  order.GetUserID(),
+		Asset: &orders.Asset{
+			Id:        order.GetAsset().GetID(),
+			AssetType: orders.AssetType_ASSET_TYPE_DAPPER_CREDIT,
+			Name:      order.GetAsset().GetName(),
 		},
-		Price: OrderPrice{
+		Price: &orders.Price{
 			Amount:       order.GetPrice().GetAmount(),
-			CurrencyType: order.GetPrice().GetCurrencyType(),
+			CurrencyType: common.CurrencyType_CURRENCY_TYPE_USD,
 		},
 	}
 }

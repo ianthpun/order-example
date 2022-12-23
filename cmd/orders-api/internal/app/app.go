@@ -3,34 +3,13 @@ package app
 import (
 	"context"
 	"order-sample/cmd/orders-api/internal/domain"
-	"order-sample/internal/protobuf/orders"
 )
 
-// PaymentService are all the capabilities of the payment service
-type PaymentService interface {
-	GetPaymentMethods(
-		ctx context.Context,
-		userID string,
-		types []domain.PaymentMethodType,
-	) ([]domain.PaymentInstrument, error)
-	ChargePayment(
-		ctx context.Context,
-		orderID string,
-		userID string,
-		paymentOption domain.PaymentOption,
-	) (string, error)
-}
-
-// AssetService are all the capabilities of the asset service
-type AssetService interface {
-	IsAvailable(ctx context.Context, asset domain.Asset) (bool, error)
-	Deliver(ctx context.Context, order domain.Order) error
-}
-
 type Application struct {
-	PaymentService  PaymentService
-	AssetService    AssetService
-	OrderRepository domain.OrderRepository
+	PaymentService   PaymentService
+	AssetService     AssetService
+	OrderRepository  domain.OrderRepository
+	WorkflowExecutor WorkflowExecutor
 }
 
 // New returns a new Application
@@ -38,11 +17,13 @@ func New(
 	paymentService PaymentService,
 	assetService AssetService,
 	orderRepository domain.OrderRepository,
+	workflowExecutor WorkflowExecutor,
 ) *Application {
 	return &Application{
-		PaymentService:  paymentService,
-		AssetService:    assetService,
-		OrderRepository: orderRepository,
+		PaymentService:   paymentService,
+		AssetService:     assetService,
+		OrderRepository:  orderRepository,
+		WorkflowExecutor: workflowExecutor,
 	}
 }
 
@@ -135,20 +116,4 @@ func (a *Application) CreateOrder(
 	order domain.Order,
 ) error {
 	return a.OrderRepository.InsertNewOrder(ctx, order)
-}
-
-func toOrderDomain(req *orders.WorkflowOrderRequest) (*domain.Order, error) {
-	asset, err := domain.NewDapperCreditAsset(
-		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return domain.NewOrder(
-		req.GetOrderId(),
-		req.GetUserId(),
-		*asset,
-		domain.NewMoney(req.GetPrice().GetAmount(), req.GetPrice().GetCurrencyType()),
-	)
 }
