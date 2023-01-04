@@ -14,8 +14,8 @@ type WorkflowExecutor interface {
 }
 
 type OrderService struct {
-	workflowExecutor WorkflowExecutor
-	app              app.Application
+	workflowEngine WorkflowExecutor
+	app            app.Application
 }
 
 func NewOrderService() *OrderService {

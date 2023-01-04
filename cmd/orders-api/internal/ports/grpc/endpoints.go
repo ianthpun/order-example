@@ -15,7 +15,7 @@ func (o *OrderService) CreateOrder(
 		return nil, err
 	}
 
-	if err := o.workflowExecutor.StartOrder(ctx, *order); err != nil {
+	if err := o.workflowEngine.StartOrder(ctx, *order); err != nil {
 		return nil, err
 	}
 
@@ -40,7 +40,7 @@ func (o *OrderService) CancelOrder(
 	ctx context.Context,
 	req *orders.CancelOrderRequest,
 ) (*orders.CancelOrderResponse, error) {
-	if err := o.workflowExecutor.CancelOrder(ctx, req.GetOrderId()); err != nil {
+	if err := o.workflowEngine.CancelOrder(ctx, req.GetOrderId()); err != nil {
 		return nil, err
 	}
 
@@ -51,7 +51,7 @@ func (o *OrderService) ConfirmOrder(
 	ctx context.Context,
 	req *orders.ConfirmOrderRequest,
 ) (*orders.ConfirmOrderResponse, error) {
-	if err := o.workflowExecutor.ConfirmOrder(ctx, req.GetOrderId(), req.GetPaymentOptionId()); err != nil {
+	if err := o.workflowEngine.ConfirmOrder(ctx, req.GetOrderId(), req.GetPaymentOptionId()); err != nil {
 		return nil, err
 	}
 
